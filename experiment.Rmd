@@ -69,6 +69,17 @@ try pca?
 ```{r}
 data_df <- fltrain
 ```
+
+```{r}
+dim(data_df)
+```
+```{r}
+dim(na.omit(data_df))
+```
+```{r}
+na.omit(data_df)
+```
+
 ```{r}
 colnames(data_df)
 ```
@@ -90,6 +101,8 @@ full_model <- lm(dep_delay ~ wind_gust + precip + manufacturer , data=data_df)
 
 "dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight+origin+dest+distance+hour+minute+time_hour+temp+dewp+humid+wind_dir+wind_speed+wind_gust+precip+pressure+visib+name+lat+lon+alt+tz+dst+tzone+year.y+type+manufacturer+model+engines+seats+speed+engine+sched_air_time"
 full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
+full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
+
 summary <- round(summary(full_model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
 sorteddf
@@ -125,18 +138,56 @@ x_features <- data_df[ , !(names(data_df) %in% drops)]
 print(x_features)
 
 
+full_formula_vec <- c(length(colnames(x_features)))
 
 for (i in 1:length(colnames(x_features))) 
 {
   vector[i] <- colnames(x_features)[i]
   formula <- paste0(vector, sep="", collapse="+")
   full_formula <- paste0(c('dep_delay', formula), sep="", collapse="~")
-  print(full_formula)
+  #print(i)
+  #print(full_formula)
+  full_formula_vec[i] <- full_formula
   #full_model <- lm(full_formula , data=data_df)
 }
 #   user  system elapsed 
 #  0.024   0.000   0.023 
 ```
+
+```{r}
+full_formula_vec
+```
+```{r}
+full_formula_vec[26]
+```
+
+full_formula_vec up to 34 is ok.
+```{r}
+length(full_formula_vec)
+```
+
+```{r}
+full_formula_vec[35]
+```
+
+```{r}
+x_features[35]
+```
+
+```{r}
+head(data_df)
+```
+
+```{r}
+full_model <- lm(full_formula_vec[35] , data=data_df)
+summary <- round(summary(full_model)$coefficients,6)
+sorteddf <- summary[order(summary[,ncol(summary)]),]
+sorteddf
+summary
+```
+
+there was something wrong with the speed variable. 
+
 
 ```{r}
 full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
@@ -149,7 +200,6 @@ summary(full_model)
 #full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight+tailnum , data=data_df)
 summary(full_model)
 ```
-
 
 ```{r}
 data_df %>% dplyr::mutate_all(as.factor) %>% str
