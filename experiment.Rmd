@@ -74,59 +74,6 @@ The report should have the following sections
 # 1. Introduction (brief)
 # 2. Data (brief)
 # 3. Methods
-# 4. Results
-# 5. Conclusions and Discussion  
-
-    
-The reports will be judged on the following criteria.
-
-* Content (20): 
-The content should be clear, accurate, complete and at the 
-level of students in Stat 452. In the Methods you should provide a brief
-description of any statistical methods you use. Please
-restrict yourself to methods that were covered
-in class. You can mention methods not covered as
-areas of future work. 
-Methods you considered 
-but were not the focus of your report should be briefly mentioned 
-here too.
-In Results you should summarize and interpret the fitted model. 
-Though the primary goal is prediction, your insights into the 
-data-generating process are important. Refer to the Appendix for
-the code that implements your prediction equation.
-In the Conclusions and Discussion present your conclusions, 
-discuss short-comings of your approach, and, optionally,
-ideas for further work.
-* Organization (3): Though the report is structured, you should
-present your ideas logically within each section.
-* Grammar and spelling (2): Please proof-read your report.
-
-### Code (15 marks)
-
-The code in your Appendix
-should look correct and be readable. 
-Given the size of the dataset, you do
-not need to provide run-able code for
-all analyses. Use `{r, eval=FALSE}` in your computationally-intensive code chunks
-to prevent them from running.
-The Appendix will be judged on the following criteria.
-
-* Software Details (2): List the version of R you are using
-and the names of all packages used in your analysis **at the beginning**
-of the Appendix. Please also provide an estimate of the time
-it will take to knit the code if more than about 2 minutes.
-* Correctness (5): There should be no errors in data
-processing, function calls, etc.
-* Readability (5): The steps of your analysis should 
-be clearly layed out and it should be easy for the reader
-to find the final prediction equation/method.
-* Efficiency (3): Please take steps to avoid computational
-inefficiencies, such as loops and excessive copying of 
-large R objects.
-
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
 
 ## Loading libraries
 
@@ -147,7 +94,8 @@ fltrain <- read_csv("fltrain.csv.gz")
 ```
 
 # Preprocessing
-deleting dep_time because that leaks the response variable. 
+dropping the columns "dep_time", "arr_time", "air_time", "arr_delay", because that leaks the response variable. 
+dropping column  "year.x" because it contains redundant information 
 
 ```{r}
 class(fltrain)
@@ -163,6 +111,8 @@ fltrain
 do normalization of every column first except for intercept and response 
 do feature selection with cp estimates or k folds cross validation
 try pca?
+
+# do boosted regression, ie gradient boosting or xgboost.
 
 # do hybrid lasso and ridge regression
 ```{r}
@@ -235,7 +185,7 @@ sorteddf <- summary[order(summary[,ncol(summary)]),]
 head(sorteddf)
 ```
 
-there was something wrong with the speed variable. 
+there was something wrong with the speed variable which caused this error involving factors and was therefore dropped.  
 
 
 
@@ -254,4 +204,59 @@ data_df %>% dplyr::mutate_all(as.factor) %>% str
 library(Hmisc)
 describe(data_df)
 ```
+
+
+# 4. Results
+# 5. Conclusions and Discussion  
+
+    
+The reports will be judged on the following criteria.
+
+* Content (20): 
+The content should be clear, accurate, complete and at the 
+level of students in Stat 452. In the Methods you should provide a brief
+description of any statistical methods you use. Please
+restrict yourself to methods that were covered
+in class. You can mention methods not covered as
+areas of future work. 
+Methods you considered 
+but were not the focus of your report should be briefly mentioned 
+here too.
+In Results you should summarize and interpret the fitted model. 
+Though the primary goal is prediction, your insights into the 
+data-generating process are important. Refer to the Appendix for
+the code that implements your prediction equation.
+In the Conclusions and Discussion present your conclusions, 
+discuss short-comings of your approach, and, optionally,
+ideas for further work.
+* Organization (3): Though the report is structured, you should
+present your ideas logically within each section.
+* Grammar and spelling (2): Please proof-read your report.
+
+### Code (15 marks)
+
+The code in your Appendix
+should look correct and be readable. 
+Given the size of the dataset, you do
+not need to provide run-able code for
+all analyses. Use `{r, eval=FALSE}` in your computationally-intensive code chunks
+to prevent them from running.
+The Appendix will be judged on the following criteria.
+
+* Software Details (2): List the version of R you are using
+and the names of all packages used in your analysis **at the beginning**
+of the Appendix. Please also provide an estimate of the time
+it will take to knit the code if more than about 2 minutes.
+* Correctness (5): There should be no errors in data
+processing, function calls, etc.
+* Readability (5): The steps of your analysis should 
+be clearly layed out and it should be easy for the reader
+to find the final prediction equation/method.
+* Efficiency (3): Please take steps to avoid computational
+inefficiencies, such as loops and excessive copying of 
+large R objects.
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
 
