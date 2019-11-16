@@ -39,6 +39,7 @@ library(tidyverse)
 ## Loading the data
 ```{r}
 library(nycflights13)
+set.seed(42)
 #help(flights)
 #help(weather)
 #help(airports)
@@ -179,7 +180,7 @@ head(data_df)
 ```
 
 ```{r}
-full_model <- lm(full_formula_vec[35] , data=data_df)
+full_model <- lm(full_formula_vec[34] , data=data_df)
 summary <- round(summary(full_model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
 sorteddf
