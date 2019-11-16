@@ -132,7 +132,6 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ```{r}
 library(tidyverse)
-
 ```
 
 
@@ -152,7 +151,6 @@ deleting dep_time because that leaks the response variable.
 
 ```{r}
 class(fltrain)
-
 fltrain['sched_air_time'] <- fltrain['sched_arr_time']-fltrain['sched_dep_time']
 #drops <- c("dep_time", "arr_time", "air_time", "arr_delay", 'sched_arr_time')
 drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x")
@@ -171,39 +169,10 @@ try pca?
 data_df <- fltrain
 ```
 
-```{r}
-dim(data_df)
-```
-```{r}
-dim(na.omit(data_df))
-```
-```{r}
-na.omit(data_df)
-```
 
 ```{r}
-colnames(data_df)
-```
-
-```{r}
-data_df['year.y']
-```
-```{r}
-colnames(data_df)
-```
-```{r}
-head(data_df)
-```
-
-```{r}
-#full_model <- lm(lifeExp ~ .*. , data=no_country_gm1952)
-full_model <- lm(dep_delay ~ wind_gust + precip + manufacturer , data=data_df)
-#full_model <- lm(dep_delay ~ . - dst - type , data=data_df)
-
 "dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight+origin+dest+distance+hour+minute+time_hour+temp+dewp+humid+wind_dir+wind_speed+wind_gust+precip+pressure+visib+name+lat+lon+alt+tz+dst+tzone+year.y+type+manufacturer+model+engines+seats+speed+engine+sched_air_time"
 full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
-full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
-
 summary <- round(summary(full_model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
 sorteddf
@@ -211,25 +180,11 @@ summary
 ```
 Error in `contrasts<-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]) : contrasts can be applied only to factors with 2 or more levels
 
-```{r}
-colnames(data_df)
-```
-```{r}
-help(paste0)
-```
-
-```{r}
-names <- colnames(data_df)
-names[2]
-```
 
 ```{r}
 set.seed(21)
-values <- sample(letters, 1e4, TRUE)
-
 vector <- character(length(colnames(data_df)))
 vector <- c(0)
-# fast(er)
 
 # drop dep_delay from features because it is reponse
 # drop tailnum because it produces too many columns 
@@ -238,7 +193,6 @@ drops <- c("dep_delay", 'tailnum')
 x_features <- data_df[ , !(names(data_df) %in% drops)]
 print(x_features)
 
-
 full_formula_vec <- c(length(colnames(x_features)))
 
 for (i in 1:length(colnames(x_features))) 
@@ -246,13 +200,8 @@ for (i in 1:length(colnames(x_features)))
   vector[i] <- colnames(x_features)[i]
   formula <- paste0(vector, sep="", collapse="+")
   full_formula <- paste0(c('dep_delay', formula), sep="", collapse="~")
-  #print(i)
-  #print(full_formula)
   full_formula_vec[i] <- full_formula
-  #full_model <- lm(full_formula , data=data_df)
 }
-#   user  system elapsed 
-#  0.024   0.000   0.023 
 ```
 
 ```{r}
@@ -283,24 +232,14 @@ head(data_df)
 full_model <- lm(full_formula_vec[34] , data=data_df)
 summary <- round(summary(full_model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
-sorteddf
-summary
+head(sorteddf)
 ```
 
 there was something wrong with the speed variable. 
 
 
-```{r}
-full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
-summary(full_model)
-```
-
 
 #drop tailnum too computationally expensive, adds tooo many columns
-```{r}
-#full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight+tailnum , data=data_df)
-summary(full_model)
-```
 
 ```{r}
 data_df %>% dplyr::mutate_all(as.factor) %>% str
@@ -310,14 +249,6 @@ data_df %>% dplyr::mutate_all(as.factor) %>% str
 (l <- sapply(data_df, function(x) is.factor(x)))
 ```
  
-```{r}
-m <- data_df[, l]
-m
-```
-
-```{r}
-data_df
-```
 
 ```{r}
 library(Hmisc)
