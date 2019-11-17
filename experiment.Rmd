@@ -260,7 +260,15 @@ View(data_df)
 set.seed(42)
 data_df <- data_df[!is.na(data_df$dep_delay), relevant_columns]
 hboost <- gbm(dep_delay ~ ., data=data_df,
-              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
+              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
+```
+
+```{r}
+
+```
+
+
+```{r}
 summary(hboost)
 ```
 
@@ -273,23 +281,61 @@ pressure which is Sea level pressure in millibars is strangely important too.
 2^6
 ```
 
+
+Cross Validation
+
+
+```{r}
+train <- sample(1:nrow(data_df),size=2*nrow(data_df)/3,replace=FALSE)
+train_df <- data_df[train,]
+test_df <- data_df[-train,]
+```
+
+```{r}
+nrow(train_df)
+head(train_df)
+```
+```{r}
+nrow(test_df)
+head(test_df)
+```
+
+
 ```{r}
 library(e1071)
-obj <- tune(svm, dep_delay~., data=data_df, 
-              ranges = list(n.trees = 2^(5:10)),
-              tunecontrol = tune.control(sampling = "fix")
-             )
-
-hboost <- gbm(dep_delay ~ ., data=data_df,
-              n.trees=1000, shrinkage=0.01)
-
-
-  ## alternatively:
-  ## obj <- tune.svm(Species~., data = iris, gamma = 2^(-1:1), cost = 2^(2:4))
-
+#obj <- tune(svm, dep_delay~., data=data_df, 
+              #ranges = list(n.trees = 2^(5:10)),
+              #tunecontrol = tune.control(sampling = "fix")
+             #)
 summary(obj)
 plot(obj)
 ```
+
+
+```{r}
+hboost <- gbm(dep_delay ~ ., data=train_df,
+              n.trees=1000, shrinkage=0.01)
+```
+
+```{r}
+preds = predict(hboost, n.trees = 1000, newdata=test_df)
+mse = mean((test_df$dep_delay - preds)^2)
+mse
+sqrt(mse)
+```
+
+
+```{r}
+mean(abs(test_df$dep_delay))
+```
+```{r}
+preds = predict(hboost, n.trees = 1000, newdata=test_df)
+mse = mean((test_df$dep_delay-0)^2)
+mse
+sqrt(mse)
+```
+
+
 ```{r}
 help("flights")
 ```
