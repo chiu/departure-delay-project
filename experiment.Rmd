@@ -96,12 +96,13 @@ fltrain <- read_csv("fltrain.csv.gz")
 # Preprocessing
 dropping the columns "dep_time", "arr_time", "air_time", "arr_delay", because that leaks the response variable. 
 dropping column  "year.x" because it contains redundant information 
+dropping tailnum because it produces too many dummy variable columns for one hot encoding. 
 
 ```{r}
 class(fltrain)
 fltrain['sched_air_time'] <- fltrain['sched_arr_time']-fltrain['sched_dep_time']
 #drops <- c("dep_time", "arr_time", "air_time", "arr_delay", 'sched_arr_time')
-drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x")
+drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
 fltrain <- fltrain[ , !(names(fltrain) %in% drops)]
 fltrain
 ```
@@ -139,7 +140,16 @@ vector <- c(0)
 # drop dep_delay from features because it is reponse
 # drop tailnum because it produces too many columns 
 
-drops <- c("dep_delay", 'tailnum')
+drops <- c("dep_delay")
+drops <- append(drops, 'speed')
+drops
+```
+
+
+```{r}
+#dropping speed because it has too many NA's.
+
+
 x_features <- data_df[ , !(names(data_df) %in% drops)]
 print(x_features)
 
@@ -155,10 +165,7 @@ for (i in 1:length(colnames(x_features)))
 ```
 
 ```{r}
-full_formula_vec
-```
-```{r}
-full_formula_vec[26]
+full_formula_vec[length(full_formula_vec)]
 ```
 
 full_formula_vec up to 34 is ok.
@@ -179,17 +186,93 @@ head(data_df)
 ```
 
 ```{r}
-full_model <- lm(full_formula_vec[34] , data=data_df)
+full_model <- lm(full_formula_vec[length(full_formula_vec)] , data=data_df)
 summary <- round(summary(full_model)$coefficients,6)
-sorteddf <- summary[order(summary[,ncol(summary)]),]
-head(sorteddf)
+sorted_df <- summary[order(summary[,ncol(summary)]),]
+head(sorted_df)
 ```
 
+
+```{r}
+help(weather)
+```
+
+
+"wind gust is the most important feature according to the linear model.
+All gusts are a type of wind. A gust is a sudden increase of the wind’s speed that lasts no more than 20 seconds. This usually occurs when wind speeds reach a peak of at least 16 knots. A wind gust usually comes in 2-minute intervals." source - differencebetween.net
+
+ "http://www.differencebetween.net/science/nature/difference-between-gust-and-wind/#ixzz65PVE7Ffb"
+ 
+ 
 there was something wrong with the speed variable which caused this error involving factors and was therefore dropped.  
 
 
-
 #drop tailnum too computationally expensive, adds tooo many columns
+
+
+
+```{r}
+first_formula <- full_formula_vec[length(full_formula_vec)]
+first_formula
+```
+```{r}
+library(gbm)
+?gbm
+```
+
+```{r}
+colnames(data_df)
+```
+
+```{r}
+relevant_columns <- append(colnames(x_features), "dep_delay")
+relevant_columns
+relevant_columns <- relevant_columns[!relevant_columns %in% c('time_hour')]
+relevant_columns
+```
+
+
+```{r}
+data_df_cols <- colnames(data_df)
+data_df_cols
+```
+
+```{r}
+setdiff(data_df_cols, relevant_columns)
+```
+
+
+
+```{r}
+data_df <- data_df[!is.na(data_df$dep_delay), relevant_columns]
+hboost <- gbm(dep_delay ~ ., data=data_df,
+              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
+summary(hboost)
+```
+
+
+```{r}
+class(data_df$carrier)
+```
+
+```{r}
+data_df[sapply(data_df, is.character)] <- lapply(data_df[sapply(data_df, is.character)], 
+                                       as.factor)
+str(data_df)
+```
+
+
+```{r}
+hboost <- gbm(first_formula, data=data_df,
+              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
+summary(hboost)
+```
+
+
+```{r}
+data_df[!is.na(data_df$dep_delay),]
+```
+
 
 ```{r}
 data_df %>% dplyr::mutate_all(as.factor) %>% str
