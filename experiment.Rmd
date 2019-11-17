@@ -260,7 +260,7 @@ View(data_df)
 set.seed(42)
 data_df <- data_df[!is.na(data_df$dep_delay), relevant_columns]
 hboost <- gbm(dep_delay ~ ., data=data_df,
-              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
+              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
 summary(hboost)
 ```
 
@@ -269,6 +269,27 @@ sched departure time has too much influence, redudant information with hour and 
 dewpointis important for some reason. 
 pressure which is Sea level pressure in millibars is strangely important too. 
 
+```{r}
+2^6
+```
+
+```{r}
+library(e1071)
+obj <- tune(svm, dep_delay~., data=data_df, 
+              ranges = list(n.trees = 2^(5:10)),
+              tunecontrol = tune.control(sampling = "fix")
+             )
+
+hboost <- gbm(dep_delay ~ ., data=data_df,
+              n.trees=1000, shrinkage=0.01)
+
+
+  ## alternatively:
+  ## obj <- tune.svm(Species~., data = iris, gamma = 2^(-1:1), cost = 2^(2:4))
+
+summary(obj)
+plot(obj)
+```
 ```{r}
 help("flights")
 ```
