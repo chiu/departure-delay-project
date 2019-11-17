@@ -1,0 +1,70 @@
+---
+title: "imputeMissingExperiment"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(imputeMissings)
+
+#Compute the values on a training dataset and impute them on new data.
+#This is very convenient in predictive contexts. For example:
+
+#define training data
+(train <- data.frame(v_int=as.integer(c(3,3,2,5,1,2,4,6)),
+                 v_num=as.numeric(c(4.1,NA,12.2,11,3.4,1.6,3.3,5.5)),
+                 v_fact=as.factor(c('one','two',NA,'two','two','one','two','two')),
+                 stringsAsFactors = FALSE))
+
+#Compute values on train data
+#randomForest method
+values <- compute(train, method="randomForest")
+#median/mode method
+values2 <- compute(train)
+
+#define new data
+(newdata <- data.frame(v_int=as.integer(c(1,1,2,NA)),
+                 v_num=as.numeric(c(1.1,NA,2.2,NA)),
+                 v_fact=as.factor(c('one','one','one',NA)),
+                 stringsAsFactors = FALSE))
+
+#locate the NA's
+is.na(newdata)
+#how many missings per variable?
+colSums(is.na(newdata))
+
+#Impute on newdata
+impute(newdata,object=values) #using randomForest values
+impute(newdata,object=values2) #using median/mode values
+
+#One can also impute directly in newdata without the compute step
+impute(newdata)
+
+#Flag parameter
+impute(newdata,flag=TRUE)
+
+```
+
