@@ -227,9 +227,11 @@ colnames(data_df)
 ```{r}
 relevant_columns <- append(colnames(x_features), "dep_delay")
 relevant_columns
-relevant_columns <- relevant_columns[!relevant_columns %in% c('time_hour')]
+relevant_columns <- relevant_columns[!relevant_columns %in% c('time_hour', 'sched_dep_time')]
 relevant_columns
 ```
+
+remove scheduled departure time because it is redundant with hour and minute. 
 
 
 ```{r}
@@ -241,25 +243,47 @@ data_df_cols
 setdiff(data_df_cols, relevant_columns)
 ```
 
-
+# turning all columns with datatype characters to factors. 
+```{r}
+data_df[sapply(data_df, is.character)] <- lapply(data_df[sapply(data_df, is.character)], 
+                                       as.factor)
+str(data_df)
+```
+```{r}
+head(data_df)
+```
+```{r}
+View(data_df)
+```
 
 ```{r}
+set.seed(42)
 data_df <- data_df[!is.na(data_df$dep_delay), relevant_columns]
 hboost <- gbm(dep_delay ~ ., data=data_df,
               n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
 summary(hboost)
 ```
 
+sched departure time has too much influence, redudant information with hour and time. 
+
+dewpointis important for some reason. 
+pressure which is Sea level pressure in millibars is strangely important too. 
+
+```{r}
+help("flights")
+```
+
+
+
+```{r}
+help(weather)
+```
 
 ```{r}
 class(data_df$carrier)
 ```
 
-```{r}
-data_df[sapply(data_df, is.character)] <- lapply(data_df[sapply(data_df, is.character)], 
-                                       as.factor)
-str(data_df)
-```
+
 
 
 ```{r}
@@ -341,5 +365,9 @@ large R objects.
 
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Appendix
+Using R version 3.6.1 Action of the Toes
+Time to run on my local machine takes less than 2 minutes.
 
 
