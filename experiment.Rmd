@@ -445,7 +445,9 @@ sqrt(mse)
 
 
 ```{r}
-x <- 2^seq(5,10, by=1)
+set.seed(42)
+
+x <- 2^seq(5,12, by=1)
 mse_vec <- numeric(length(x))
 count <- 1
 for (val in x) {
@@ -454,20 +456,24 @@ for (val in x) {
     data = lm_train_df,
     n.trees = val,
     distribution = 'gaussian',
-    shrinkage = 0.01
+    shrinkage = 0.5
   )
   preds = predict(hboost, n.trees = val, newdata = lm_test_df)
   mse = mean((lm_test_df$dep_delay - preds) ^ 2)
   mse
   sqrt(mse)
   mse_vec[count] <- mse
+ 
+  print(val)
+  print(mse)
   count = count + 1
 }
-print(count)
 
 plot(x, mse_vec)
-
 ```
+
+
+# it model where mse is a function of number of trees and shrinkage to predict optimal hyperparamter that balances performance and computational intensity.
 
 
 
