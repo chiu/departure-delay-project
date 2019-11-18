@@ -336,35 +336,9 @@ mse
 sqrt(mse)
 ```
 
-# using linear regression and omitting all rows with nas. 
-```{r}
-set.seed(42)
-drops <- c('dest', 'name', 'manufacturer', 'model', 'tzone', 'engine', 'sched_air_time')
-lm_data_df <- data_df[ , !(names(data_df) %in% drops)]
 
-lm_na_omit_df <- na.omit(lm_data_df)
 
-train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
-lm_train_df <- lm_na_omit_df[train,]
-lm_test_df <- lm_na_omit_df[-train,]
 
-model <- lm(dep_delay ~ ., data=lm_train_df)
-
-summary <- round(summary(model)$coefficients,6)
-sorteddf <- summary[order(summary[,ncol(summary)]),]
-
-preds = predict(model, newdata=lm_test_df)
-mse = mean((lm_test_df$dep_delay - preds)^2)
-mse
-sqrt(mse)
-```
-
-# predicting the mean
-```{r}
-mse = mean((lm_test_df$dep_delay-mean(lm_train_df$dep_delay))^2)
-mse
-sqrt(mse)
-```
 
 
 # using linear regression and imputing with mode and median. 
@@ -392,6 +366,12 @@ sqrt(mse)
 #summary(model)
 ```
 
+# predicting the mean
+```{r}
+mse = mean((lm_test_df$dep_delay-mean(lm_test_df$dep_delay))^2)
+mse
+sqrt(mse)
+```
 
 
 # using linear regression and imputing with mode and median. 
@@ -418,9 +398,77 @@ mse
 sqrt(mse)
 #summary(model)
 ```
+
+# using gbm
 ```{r}
-la_na_omit_df
+hboost <- gbm(dep_delay ~ ., data=lm_train_df,
+              n.trees=1000, shrinkage=0.01)
 ```
+
+```{r}
+preds = predict(hboost, n.trees = 1000, newdata=lm_test_df)
+mse = mean((lm_test_df$dep_delay - preds)^2)
+mse
+sqrt(mse)
+```
+
+# using gbm
+```{r}
+hboost <- gbm(dep_delay ~ ., data=lm_train_df,
+              n.trees=100, shrinkage=0.1)
+preds = predict(hboost, n.trees = 100, newdata=lm_test_df)
+mse = mean((lm_test_df$dep_delay - preds)^2)
+mse
+sqrt(mse)
+```
+
+
+```{r}
+hboost <- gbm(dep_delay ~ ., data=lm_train_df,
+              n.trees=100, distribution='gaussian', shrinkage=0.2)
+preds = predict(hboost, n.trees = 100, newdata=lm_test_df)
+mse = mean((lm_test_df$dep_delay - preds)^2)
+mse
+sqrt(mse)
+```
+
+# take shrinkage or learning rate to be as small as possible and tune number of trees.
+
+```{r}
+hboost <- gbm(dep_delay ~ ., data=lm_train_df,
+              n.trees=100, distribution='gaussian', shrinkage=0.2)
+preds = predict(hboost, n.trees = 100, newdata=lm_test_df)
+mse = mean((lm_test_df$dep_delay - preds)^2)
+mse
+sqrt(mse)
+```
+
+
+```{r}
+x <- 2^seq(5,10, by=1)
+mse_vec <- numeric(length(x))
+count <- 1
+for (val in x) {
+  hboost <- gbm(
+    dep_delay ~ .,
+    data = lm_train_df,
+    n.trees = val,
+    distribution = 'gaussian',
+    shrinkage = 0.01
+  )
+  preds = predict(hboost, n.trees = val, newdata = lm_test_df)
+  mse = mean((lm_test_df$dep_delay - preds) ^ 2)
+  mse
+  sqrt(mse)
+  mse_vec[count] <- mse
+  count = count + 1
+}
+print(count)
+
+plot(x, mse_vec)
+
+```
+
 
 
 ```{r}
