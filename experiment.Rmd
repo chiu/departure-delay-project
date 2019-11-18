@@ -313,8 +313,8 @@ library(e1071)
               #ranges = list(n.trees = 2^(5:10)),
               #tunecontrol = tune.control(sampling = "fix")
              #)
-summary(obj)
-plot(obj)
+#summary(obj)
+#plot(obj)
 ```
 
 
@@ -324,7 +324,6 @@ mean(abs(test_df$dep_delay))
 ```
 # predicting 0
 ```{r}
-preds = predict(hboost, n.trees = 1000, newdata=test_df)
 mse = mean((test_df$dep_delay-0)^2)
 mse
 sqrt(mse)
@@ -332,24 +331,19 @@ sqrt(mse)
 
 # predicting the mean
 ```{r}
-preds = predict(hboost, n.trees = 1000, newdata=test_df)
 mse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)
 mse
 sqrt(mse)
 ```
 
-# using linear regression
+# using linear regression and omitting all rows with nas. 
 ```{r}
+set.seed(42)
 drops <- c('dest', 'name', 'manufacturer', 'model', 'tzone', 'engine', 'sched_air_time')
 lm_data_df <- data_df[ , !(names(data_df) %in% drops)]
-nrow(lm_data_df)
-nrow(na.omit(lm_data_df))
 
 lm_na_omit_df <- na.omit(lm_data_df)
-```
 
-
-```{r}
 train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
 lm_train_df <- lm_na_omit_df[train,]
 lm_test_df <- lm_na_omit_df[-train,]
@@ -358,38 +352,76 @@ model <- lm(dep_delay ~ ., data=lm_train_df)
 
 summary <- round(summary(model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
-sorteddf
-```
 
-```{r}
-nrow(lm_train_df)
-nrow(na.omit(lm_train_df))
-```
-
-```{r}
-library(Hmisc)
-#describe(lm_train_df)
-sapply(lm_train_df, class)
-str(lm_train_df)
-```
-
-```{r}
-str(lm_test_df)
-```
-
-
-
-```{r}
 preds = predict(model, newdata=lm_test_df)
 mse = mean((lm_test_df$dep_delay - preds)^2)
 mse
 sqrt(mse)
-summary(model)
+```
+
+# predicting the mean
+```{r}
+mse = mean((lm_test_df$dep_delay-mean(lm_train_df$dep_delay))^2)
+mse
+sqrt(mse)
+```
+
+
+# using linear regression and imputing with mode and median. 
+```{r}
+drops <- c('dest', 'name', 'manufacturer', 'model', 'tzone', 'engine', 'sched_air_time')
+lm_data_df <- data_df[ , !(names(data_df) %in% drops)]
+
+lm_na_omit_df <- imputeMissings:::impute(lm_data_df)
+
+train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
+lm_train_df <- lm_na_omit_df[train,]
+lm_test_df <- lm_na_omit_df[-train,]
+
+model <- lm(dep_delay ~ ., data=lm_train_df)
+
+summary <- round(summary(model)$coefficients,6)
+sorteddf <- summary[order(summary[,ncol(summary)]),]
+#sorteddf
+
+preds = predict(model, newdata=lm_test_df)
+mse = mean((lm_test_df$dep_delay - preds)^2)
+
+mse
+sqrt(mse)
+#summary(model)
+```
+
+
+
+# using linear regression and imputing with mode and median. 
+```{r}
+drops <- c('dest', 'name', 'manufacturer', 'model', 'tzone', 'engine', 'sched_air_time')
+lm_data_df <- data_df[ , !(names(data_df) %in% drops)]
+
+lm_na_omit_df <- imputeMissings::impute(lm_data_df, method = 'median/mode', flag=TRUE)
+
+train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
+lm_train_df <- lm_na_omit_df[train,]
+lm_test_df <- lm_na_omit_df[-train,]
+
+model <- lm(dep_delay ~ ., data=lm_train_df)
+
+summary <- round(summary(model)$coefficients,6)
+sorteddf <- summary[order(summary[,ncol(summary)]),]
+#sorteddf
+
+preds = predict(model, newdata=lm_test_df)
+mse = mean((lm_test_df$dep_delay - preds)^2)
+
+mse
+sqrt(mse)
+#summary(model)
 ```
 ```{r}
-View(preds)
-str(model)
+la_na_omit_df
 ```
+
 
 ```{r}
 library(Matrix)

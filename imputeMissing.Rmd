@@ -39,6 +39,10 @@ library(imputeMissings)
                  v_fact=as.factor(c('one','two',NA,'two','two','one','two','two')),
                  stringsAsFactors = FALSE))
 
+```
+
+
+```{r}
 #Compute values on train data
 #randomForest method
 values <- compute(train, method="randomForest")
@@ -50,7 +54,10 @@ values2 <- compute(train)
                  v_num=as.numeric(c(1.1,NA,2.2,NA)),
                  v_fact=as.factor(c('one','one','one',NA)),
                  stringsAsFactors = FALSE))
+```
 
+
+```{r}
 #locate the NA's
 is.na(newdata)
 #how many missings per variable?
@@ -66,5 +73,16 @@ impute(newdata)
 #Flag parameter
 impute(newdata,flag=TRUE)
 
+```
+
+```{r}
+train
+```
+
+```{r}
+impute(train, method = 'randomForest', flag=TRUE)
+```
+```{r}
+train
 ```
 
