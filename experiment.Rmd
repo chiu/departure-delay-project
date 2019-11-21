@@ -122,6 +122,21 @@ data_df <- fltrain
 
 
 ```{r}
+nrow(data_df)
+```
+
+```{r}
+library(dplyr)
+non_extreme_delay_subset <- data_df[data_df$dep_delay < 30,]
+non_extreme_delay_subset
+hist(non_extreme_delay_subset$dep_delay)
+nrow(non_extreme_delay_subset)
+```
+```{r}
+data_df <- non_extreme_delay_subset
+```
+
+```{r}
 "dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight+origin+dest+distance+hour+minute+time_hour+temp+dewp+humid+wind_dir+wind_speed+wind_gust+precip+pressure+visib+name+lat+lon+alt+tz+dst+tzone+year.y+type+manufacturer+model+engines+seats+speed+engine+sched_air_time"
 full_model <- lm(dep_delay~month+day+sched_dep_time+sched_arr_time+carrier+flight , data=data_df)
 summary <- round(summary(full_model)$coefficients,6)
@@ -337,8 +352,12 @@ sqrt(mse)
 ```
 
 
+```{r}
+mean(train_df$dep_delay)
+```
 
 
+#can try median for this
 
 
 # using linear regression and imputing with mode and median. 
@@ -447,7 +466,7 @@ sqrt(mse)
 ```{r}
 set.seed(42)
 
-x <- 2^seq(5,12, by=1)
+x <- 2^seq(5,14, by=1)
 mse_vec <- numeric(length(x))
 count <- 1
 for (val in x) {
@@ -456,7 +475,7 @@ for (val in x) {
     data = lm_train_df,
     n.trees = val,
     distribution = 'gaussian',
-    shrinkage = 0.5
+    shrinkage = 0.01
   )
   preds = predict(hboost, n.trees = val, newdata = lm_test_df)
   mse = mean((lm_test_df$dep_delay - preds) ^ 2)
