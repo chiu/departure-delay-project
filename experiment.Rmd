@@ -132,8 +132,20 @@ non_extreme_delay_subset
 hist(non_extreme_delay_subset$dep_delay)
 nrow(non_extreme_delay_subset)
 ```
+
 ```{r}
 data_df <- non_extreme_delay_subset
+```
+
+
+# try features scaling
+```{r}
+dep_delay_vec <- data_df$dep_delay
+data_df$dep_delay <- NULL
+head(data_df)
+scale(data_df)
+head()
+
 ```
 
 ```{r}
@@ -163,8 +175,6 @@ drops
 
 ```{r}
 #dropping speed because it has too many NA's.
-
-
 x_features <- data_df[ , !(names(data_df) %in% drops)]
 print(x_features)
 
@@ -230,14 +240,18 @@ there was something wrong with the speed variable which caused this error involv
 first_formula <- full_formula_vec[length(full_formula_vec)]
 first_formula
 ```
+
+
 ```{r}
 library(gbm)
 ?gbm
 ```
 
+
 ```{r}
 colnames(data_df)
 ```
+
 
 ```{r}
 relevant_columns <- append(colnames(x_features), "dep_delay")
@@ -264,9 +278,11 @@ data_df[sapply(data_df, is.character)] <- lapply(data_df[sapply(data_df, is.char
                                        as.factor)
 str(data_df)
 ```
+
 ```{r}
 head(data_df)
 ```
+
 ```{r}
 View(data_df)
 ```
@@ -294,7 +310,6 @@ pressure which is Sea level pressure in millibars is strangely important too.
 
 
 Cross Validation
-
 
 ```{r}
 train <- sample(1:nrow(data_df),size=2*nrow(data_df)/3,replace=FALSE)
@@ -328,6 +343,7 @@ library(e1071)
 ```{r}
 mean(abs(test_df$dep_delay))
 ```
+
 # predicting 0
 ```{r}
 mse = mean((test_df$dep_delay-0)^2)
@@ -399,14 +415,12 @@ model <- lm(dep_delay ~ ., data=lm_train_df)
 
 summary <- round(summary(model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
-#sorteddf
 
 preds = predict(model, newdata=lm_test_df)
 mse = mean((lm_test_df$dep_delay - preds)^2)
 
 mse
 sqrt(mse)
-#summary(model)
 ```
 
 # using gbm
