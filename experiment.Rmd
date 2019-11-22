@@ -278,10 +278,6 @@ hboost <- gbm(dep_delay ~ ., data=data_df,
               n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
 ```
 
-```{r}
-
-```
-
 
 ```{r}
 summary(hboost)
@@ -302,12 +298,6 @@ Cross Validation
 
 ```{r}
 train <- sample(1:nrow(data_df),size=2*nrow(data_df)/3,replace=FALSE)
-
-
-
-
-
-
 train_df <- data_df[train,]
 test_df <- data_df[-train,]
 ```
@@ -316,6 +306,7 @@ test_df <- data_df[-train,]
 nrow(train_df)
 head(train_df)
 ```
+
 ```{r}
 nrow(test_df)
 head(test_df)
