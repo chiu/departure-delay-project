@@ -222,3 +222,19 @@ for (val in x) {
 
 plot(x, rmse_vec)
 ```
+```{r}
+plot(x, rmse_vec)
+```
+
+```{r}
+summary(hboost)
+```
+```{r}
+class(summary(hboost))
+```
+
+```{r}
+summary <- summary(hboost)
+write.csv(summary,'16384trees_gbm.csv')
+```
+
