@@ -190,10 +190,35 @@ summary(model)
 ```{r}
 model <- gbm(dep_delay ~ ., data=train_df,
               n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=100)
+preds = predict(model, newdata=test_df, n.trees=1000)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 summary(model)
 ```
 
+```{r}
+set.seed(42)
 
+x <- 2^seq(5,14, by=1)
+rmse_vec <- numeric(length(x))
+count <- 1
+for (val in x) {
+  hboost <- gbm(
+    dep_delay ~ .,
+    data = train_df,
+    n.trees = val,
+    distribution = 'gaussian',
+    shrinkage = 0.01
+  )
+  preds = predict(hboost, n.trees = val, newdata = test_df)
+  mse = mean((test_df$dep_delay - preds) ^ 2)
+  rmse <- sqrt(mse)
+  rmse_vec[count] <- rmse
+ 
+  print(val)
+  print(rmse)
+  count = count + 1
+}
+
+plot(x, rmse_vec)
+```
