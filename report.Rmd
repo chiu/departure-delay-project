@@ -1,19 +1,198 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Stat 652 Project"
+author: "Vincent Chiu"
+date: '2019-10-16'
+output: pdf_document
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
-
-```{r}
-plot(cars)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+## Loading Libraries
+```{r}
+library(tidyverse)
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+## Loading the data
+```{r}
+library(nycflights13)
+library(Hmisc)
+set.seed(42)
+original_data <- read_csv("fltrain.csv.gz")
+DF <- original_data
+```
+
+# turning all columns with datatype characters to factors. 
+```{r}
+DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
+                                       as.factor)
+DF$flight <- as.factor(DF$flight)
+str(DF)
+```
+
+
+# Methods 
+## Preprocessing
+
+Data preprocessing steps include the following:
+- Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
+- Dropping columns with too many NAs.
+- Impute NAs for the remaining columns. 
+- Scaling the data to work well with methods like lasso regression.
+
+
+## - Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
+
+dropping the columns "dep_time", "arr_time", "air_time", "arr_delay", because that leaks the response variable. 
+dropping column  "year.x" because all the values are 2013
+dropping tailnum because it produces too many dummy variable columns for one hot encoding. 
+
+```{r}
+library(lubridate)
+DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
+DF$sched_arr_time_hour <- hour(DF$sched_arr_time_posix)
+DF$sched_arr_time_minute <- minute(DF$sched_arr_time_posix)
+
+#num minute is number of minutes since start of day for scheduled arrival time
+DF$sched_arr_time_num_minute <- 60*DF$sched_arr_time_hour + DF$sched_arr_time_minute
+
+DF$sched_dep_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_dep_time),4 , pad="0"),format="%H%M")
+DF$sched_dep_time_hour <- hour(DF$sched_dep_time_posix)
+DF$sched_dep_time_minute <- minute(DF$sched_dep_time_posix)
+#num minute is number of minutes since start of day for scheduled depival time
+DF$sched_dep_time_num_minute <- 60*DF$sched_dep_time_hour + DF$sched_dep_time_minute
+```
+```{r}
+select(original_data, time_hour, sched_dep_time, sched_arr_time, tz, tzone)
+select(DF, sched_arr_time, sched_arr_time_hour)
+```
+
+```{r}
+DF$sched_air_time <- DF$sched_arr_time_posix - DF$sched_dep_time_posix
+drops <- c('sched_arr_time_posix', 'sched_arr_time_hour', 'sched_dep_time_posix', 'sched_dep_time_hour', 'sched_dep_time', 'sched_arr_time', 'hour', 'time', 'minute', 'time_hour' )
+DF <- DF[ , !(names(DF) %in% drops)]
+```
+
+
+```{r}
+drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
+DF <- DF[ , !(names(DF) %in% drops)]
+```
+
+
+
+```{r}
+DF
+```
+
+```{r}
+## Remove columns with more than 50% NA
+DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
+```
+
+```{r}
+DF$sched_air_time <- as.numeric(DF$sched_air_time)
+library(imputeMissings)
+impute_model <- imputeMissings::compute(DF, method="median/mode", flag=TRUE)
+impute_model
+DF <- impute(DF, object=impute_model)
+```
+
+```{r}
+numeric_only_df <- dplyr::select_if(DF, is.numeric)
+library(corrplot)
+corrplot(cor(numeric_only_df), type = 'lower')
+```
+
+# try features scaling
+```{r}
+dep_delay_vec <- DF$dep_delay
+DF$dep_delay <- NULL
+head(DF)
+
+library(dplyr)
+DF <- DF %>% mutate_if(is.numeric, scale)
+head(DF)
+DF$dep_delay <- dep_delay_vec
+```
+
+#take out extreme departure delays
+```{r}
+DF<-DF[DF$dep_delay < 30,]
+```
+
+```{r}
+set.seed(42)
+DF$flight <- NULL
+train_index <- sample(1:nrow(DF),size=2*nrow(DF)/3,replace=FALSE)
+train_df <- DF[train_index,]
+test_df <- DF[-train_index,]
+```
+
+
+# predicting 0
+```{r}
+rmse = mean((test_df$dep_delay-0)^2) %>% sqrt()
+rmse
+```
+
+# predicting the mean
+```{r}
+rmse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)%>% sqrt()
+rmse
+```
+
+
+# predicting the median
+```{r}
+rmse = mean((test_df$dep_delay-median(train_df$dep_delay))^2)%>% sqrt()
+rmse
+```
+
+
+# linear regression
+```{r}
+model <- lm(dep_delay ~ .-model, data=train_df)
+
+summary <- round(summary(model)$coefficients,6)
+sorteddf <- summary[order(summary[,ncol(summary)]),]
+head(sorteddf)
+```
+```{r}
+lm_test_df <- test_df
+
+in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
+lm_test_df <- lm_test_df[ !lm_test_df$model %in% in_test_but_not_train, ]
+
+in_test_but_not_train <- setdiff(unique(lm_test_df$dest), unique(train_df$dest))
+lm_test_df <- lm_test_df[ !lm_test_df$dest %in% in_test_but_not_train, ]
+
+preds = predict(model, newdata=lm_test_df)
+rmse = sqrt(mean((lm_test_df$dep_delay - preds)^2))
+rmse
+```
+
+# gbm
+```{r}
+set.seed(42)
+library(gbm)
+model <- gbm(dep_delay ~ ., data=train_df,
+              n.trees=100, shrinkage=0.1) # default shrinkage = 0.1
+preds = predict(model, newdata=test_df, n.trees=100)
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+rmse
+summary(model)
+```
+
+```{r}
+model <- gbm(dep_delay ~ ., data=train_df,
+              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
+preds = predict(model, newdata=test_df, n.trees=100)
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+rmse
+summary(model)
+```
+```
 

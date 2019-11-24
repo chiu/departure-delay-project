@@ -46,3 +46,17 @@ str(DF)
 #  $ z: Factor w/ 5 levels "A","B","C","D",..: 1 2 3 4 5
 ```
 
+
+# delete NA's
+
+```{r}
+## Some sample data
+set.seed(0)
+dat <- matrix(1:100, 10, 10)
+dat[sample(1:100, 50)] <- NA
+dat <- data.frame(dat)
+
+## Remove columns with more than 50% NA
+dat[, -which(colMeans(is.na(dat)) > 0.5)]
+```
+
