@@ -3,6 +3,7 @@ title: "Stat 652 Project"
 author: "Vincent Chiu"
 date: '2019-10-16'
 output: pdf_document
+bibliography: bibliography.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -96,9 +97,9 @@ DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
 ```{r}
 DF$sched_air_time <- as.numeric(DF$sched_air_time)
 library(imputeMissings)
-impute_model <- imputeMissings::compute(DF, method="median/mode", flag=TRUE)
+impute_model <- imputeMissings::compute(DF, method="median/mode")
 impute_model
-DF <- impute(DF, object=impute_model)
+DF <- impute(DF, object=impute_model, , flag=TRUE)
 ```
 
 ```{r}
@@ -184,12 +185,18 @@ rmse
 set.seed(42)
 library(gbm)
 model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=100, shrinkage=0.1) # default shrinkage = 0.1
+              n.trees=100, shrinkage=0.1, cv.folds = 3) # default shrinkage = 0.1
 preds = predict(model, newdata=test_df, n.trees=100)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 summary(model)
 ```
+
+Here, you can see the relative influence for each variable for gbm.  
+For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
+The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
+
+
 
 ```{r}
 model <- gbm(dep_delay ~ ., data=train_df,
@@ -200,7 +207,7 @@ rmse
 summary(model)
 ```
 
-```{r}
+
 set.seed(42)
 
 x <- 2^seq(5,14, by=1)
@@ -225,35 +232,63 @@ for (val in x) {
 }
 
 plot(x, rmse_vec)
-```
-```{r}
-plot(x, rmse_vec)
-```
 
-```{r}
+
+
+
 summary(hboost)
-```
-```{r}
 class(summary(hboost))
-```
-
-```{r}
 summary <- summary(hboost)
 write.csv(summary,'16384trees_gbm.csv')
-```
+
 
 
 
 Analysis:
 
+Tuning gbm
+![alt text here](0point01_shrinkage_gbm_rmse_vs_num_trees.png)
+
+Here I plotted root mean squared error (rmse) vs the number of trees for shrinkage of 0.01 and all other variables as default for gbm. 
+You can see that after around 5000 trees, increasing the number of trees further gives diminishing returns.
+
+
+
+#Methods:
+
+## Data Preprocessing
+I performed data preprocessing. 
+My data preprocessing steps include the following:
+- Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
+- Dropping columns with too many NAs.
+- Impute NAs for the remaining columns. 
+- Scaling the data to work well with methods like lasso regression.
+- Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. 
+
+## Modelling
+
+# Basic Models
+dep_delay is the number of minutes that the plane either departs early or late.  Negative numbers are for early departures and positive numbers are for the number of minutes the plane is late.
+First, I used a basic model of simply predicting the dep_delay to always be 0. This was done to establish baseline performance.  
+This model had an root mean squared error (RMSE) of 8.30571.
+
+
+
+# Linear Regression
+
+# GBM
+
+# Basic
 
 Conclusion:
-
 In conclusion, out of the methods that we covered in class, I found gradient boosted models to provide the best performance based on having the lowest root mean squared error on the hold out test set.
 
 Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute.
 
 The dest column contains the airport code for where a given flight is flying to.
-Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence.
+Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence.[@uc_influence].
 
 
+
+
+# References
