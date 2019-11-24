@@ -143,9 +143,17 @@ data_df <- non_extreme_delay_subset
 dep_delay_vec <- data_df$dep_delay
 data_df$dep_delay <- NULL
 head(data_df)
-scale(data_df)
-head()
 
+
+
+library(dplyr)
+
+data_df <- data_df %>% mutate_if(is.numeric, scale)
+head(data_df)
+data_df$dep_delay <- dep_delay_vec
+```
+```{r}
+head(data_df)
 ```
 
 ```{r}
@@ -291,7 +299,7 @@ View(data_df)
 set.seed(42)
 data_df <- data_df[!is.na(data_df$dep_delay), relevant_columns]
 hboost <- gbm(dep_delay ~ ., data=data_df,
-              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
+              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
 ```
 
 
@@ -371,9 +379,22 @@ mean(train_df$dep_delay)
 ```{r}
 drops <- c('dest', 'name', 'manufacturer', 'model', 'tzone', 'engine', 'sched_air_time')
 lm_data_df <- data_df[ , !(names(data_df) %in% drops)]
+lm_data_df
+```
 
+```{r}
+lm_data_df
+```
+```{r}
+View(lm_data_df)
+```
+
+```{r}
 lm_na_omit_df <- imputeMissings:::impute(lm_data_df)
+```
 
+
+```{r}
 train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
 lm_train_df <- lm_na_omit_df[train,]
 lm_test_df <- lm_na_omit_df[-train,]
