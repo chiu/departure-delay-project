@@ -101,7 +101,6 @@ dropping tailnum because it produces too many dummy variable columns for one hot
 ```{r}
 class(fltrain)
 fltrain['sched_air_time'] <- fltrain['sched_arr_time']-fltrain['sched_dep_time']
-#drops <- c("dep_time", "arr_time", "air_time", "arr_delay", 'sched_arr_time')
 drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
 fltrain <- fltrain[ , !(names(fltrain) %in% drops)]
 fltrain
