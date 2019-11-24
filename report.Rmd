@@ -185,8 +185,8 @@ rmse
 set.seed(42)
 library(gbm)
 model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=100, shrinkage=0.1, cv.folds = 3) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=100)
+              n.trees=1000, shrinkage=0.003) # default shrinkage = 0.1
+preds = predict(model, newdata=test_df, n.trees=1000)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 summary(model)
@@ -205,6 +205,11 @@ preds = predict(model, newdata=test_df, n.trees=1000)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 summary(model)
+```
+
+```{r}
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+rmse
 ```
 
 
@@ -253,6 +258,14 @@ Here I plotted root mean squared error (rmse) vs the number of trees for shrinka
 You can see that after around 5000 trees, increasing the number of trees further gives diminishing returns.
 
 
+```{r}
+
+response <- DF$dep_delay
+eztune_df <- DF
+eztune_df$dep_delay <- NULL
+eztune_obj <- eztune(eztune_df, response, method = "gbm", optimizer = "hjn", fast = TRUE,
+cross = NULL)
+```
 
 #Methods:
 
@@ -270,13 +283,26 @@ My data preprocessing steps include the following:
 # Basic Models
 dep_delay is the number of minutes that the plane either departs early or late.  Negative numbers are for early departures and positive numbers are for the number of minutes the plane is late.
 First, I used a basic model of simply predicting the dep_delay to always be 0. This was done to establish baseline performance.  
-This model had an root mean squared error (RMSE) of 8.30571.
-
-
+This model had an root mean squared error (RMSE) of 8.30571. TODO
+The model in which I predicted the mean for all the predictions had an RMSE of    TODO. 
 
 # Linear Regression
+Then I tried linear regression with dep_delay as the response variables and all the other remaining variables as the explanatory variables.
+This model was better than predicting the mean with an RMSE of TODO. 
+This suggests that there is some relationship between the dep_delay and the explanatory variables. 
 
 # GBM
+Aftewards, I tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after I tuned it to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. 
+According to the vignette, the rmse can always be improved by decreasing shrinkage but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns. 
+
+
+# Analysis
+
+In regression and gbm, I found different features to be important.  For the best gbm model, dep was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.
+
+
+TODO: try interaction terms 
+
 
 # Basic
 
