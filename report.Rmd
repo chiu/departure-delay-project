@@ -15,6 +15,7 @@ library(tidyverse)
 ```
 
 
+
 ## Loading the data
 ```{r}
 library(nycflights13)
@@ -194,5 +195,5 @@ rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 summary(model)
 ```
-```
+
 
