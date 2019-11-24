@@ -162,6 +162,10 @@ sorteddf <- summary[order(summary[,ncol(summary)]),]
 head(sorteddf)
 ```
 ```{r}
+sorteddf
+```
+
+```{r}
 lm_test_df <- test_df
 
 in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
@@ -237,4 +241,19 @@ class(summary(hboost))
 summary <- summary(hboost)
 write.csv(summary,'16384trees_gbm.csv')
 ```
+
+
+
+Analysis:
+
+
+Conclusion:
+
+In conclusion, out of the methods that we covered in class, I found gradient boosted models to provide the best performance based on having the lowest root mean squared error on the hold out test set.
+
+Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute.
+
+The dest column contains the airport code for where a given flight is flying to.
+Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence.
+
 
