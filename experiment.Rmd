@@ -137,6 +137,12 @@ nrow(non_extreme_delay_subset)
 data_df <- non_extreme_delay_subset
 ```
 
+```{r}
+library(imputeMissings)
+impute_model <- imputeMissings::compute(data_df, method="median/mode")
+impute_model
+data_df <- impute(data_df, object=impute_model)
+```
 
 # try features scaling
 ```{r}
@@ -290,6 +296,16 @@ str(data_df)
 ```{r}
 head(data_df)
 ```
+```{r}
+summary(data_df)
+```
+
+
+
+
+```{r}
+head(data_df)
+```
 
 ```{r}
 View(data_df)
@@ -390,24 +406,58 @@ View(lm_data_df)
 ```
 
 ```{r}
-lm_na_omit_df <- imputeMissings:::impute(lm_data_df)
+dim(lm_data_df)
+```
+```{r}
+colnames(lm_data_df)
 ```
 
+```{r}
+library(Hmisc)
+class(lm_data_df)
+```
+
+
+```{r}
+
+lm_na_omit_df <- lm_data_df
+```
+
+```{r}
+
+```
 
 ```{r}
 train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
 lm_train_df <- lm_na_omit_df[train,]
 lm_test_df <- lm_na_omit_df[-train,]
+```
 
+```{r}
+lm_na_omit_df
+```
+```{r}
+new_DF <- lm_data_df[rowSums(is.na(lm_data_df)) > 0,]
+new_DF
+```
+
+```{r}
 model <- lm(dep_delay ~ ., data=lm_train_df)
 
 summary <- round(summary(model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
-#sorteddf
+sorteddf
 
 preds = predict(model, newdata=lm_test_df)
-mse = mean((lm_test_df$dep_delay - preds)^2)
+```
 
+
+```{r}
+mse = mean((lm_test_df$dep_delay - preds)^2)
+```
+
+
+```{r}
 mse
 sqrt(mse)
 #summary(model)
@@ -425,8 +475,14 @@ sqrt(mse)
 ```{r}
 drops <- c('dest', 'name', 'manufacturer', 'model', 'tzone', 'engine', 'sched_air_time')
 lm_data_df <- data_df[ , !(names(data_df) %in% drops)]
+```
 
-lm_na_omit_df <- imputeMissings::impute(lm_data_df, method = 'median/mode', flag=TRUE)
+```{r}
+any(is.na(lm_data_df))
+```
+
+```{r}
+lm_na_omit_df <- lm_data_df
 
 train <- sample(1:nrow(lm_na_omit_df),size=2*nrow(lm_na_omit_df)/3,replace=FALSE)
 lm_train_df <- lm_na_omit_df[train,]
@@ -456,37 +512,16 @@ mse = mean((lm_test_df$dep_delay - preds)^2)
 mse
 sqrt(mse)
 ```
-
-# using gbm
 ```{r}
-hboost <- gbm(dep_delay ~ ., data=lm_train_df,
-              n.trees=100, shrinkage=0.1)
-preds = predict(hboost, n.trees = 100, newdata=lm_test_df)
-mse = mean((lm_test_df$dep_delay - preds)^2)
-mse
-sqrt(mse)
+summary(hboost)
 ```
 
 
-```{r}
-hboost <- gbm(dep_delay ~ ., data=lm_train_df,
-              n.trees=100, distribution='gaussian', shrinkage=0.2)
-preds = predict(hboost, n.trees = 100, newdata=lm_test_df)
-mse = mean((lm_test_df$dep_delay - preds)^2)
-mse
-sqrt(mse)
-```
+
 
 # take shrinkage or learning rate to be as small as possible and tune number of trees.
 
-```{r}
-hboost <- gbm(dep_delay ~ ., data=lm_train_df,
-              n.trees=100, distribution='gaussian', shrinkage=0.2)
-preds = predict(hboost, n.trees = 100, newdata=lm_test_df)
-mse = mean((lm_test_df$dep_delay - preds)^2)
-mse
-sqrt(mse)
-```
+
 
 
 ```{r}
@@ -520,52 +555,6 @@ plot(x, mse_vec)
 
 # it model where mse is a function of number of trees and shrinkage to predict optimal hyperparamter that balances performance and computational intensity.
 
-
-
-```{r}
-library(Matrix)
-cat(rankMatrix(lm_train_df), "\n")   #prints 4
-cat(rankMatrix(lm_test_df), "\n")    #prints 3
-```
-
-
-
-# using gbm
-```{r}
-hboost <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=1000, shrinkage=0.01)
-```
-
-```{r}
-preds = predict(hboost, n.trees = 1000, newdata=test_df)
-mse = mean((test_df$dep_delay - preds)^2)
-mse
-sqrt(mse)
-
-```
-
-```{r}
-help("flights")
-```
-
-
-
-```{r}
-help(weather)
-```
-
-```{r}
-class(data_df$carrier)
-```
-
-
-
-
-```{r}
-hboost <- gbm(first_formula, data=data_df,
-              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
-summary(hboost)
-```
 
 
 ```{r}

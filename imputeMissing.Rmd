@@ -48,7 +48,13 @@ library(imputeMissings)
 values <- compute(train, method="randomForest")
 #median/mode method
 values2 <- compute(train)
+```
 
+```{r}
+values2
+```
+
+```{r}
 #define new data
 (newdata <- data.frame(v_int=as.integer(c(1,1,2,NA)),
                  v_num=as.numeric(c(1.1,NA,2.2,NA)),
