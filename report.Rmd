@@ -179,6 +179,7 @@ summary <- round(summary(model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
 head(sorteddf)
 
+#https://stat.ethz.ch/R-manual/R-devel/library/stats/html/influence.measures.html
 inflm.SR <- influence.measures(model)
 which(apply(inflm.SR$is.inf, 1, any))
 # which observations 'are' influential
