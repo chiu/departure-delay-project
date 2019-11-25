@@ -16,7 +16,6 @@ library(tidyverse)
 ```
 
 
-
 ## Loading the data
 ```{r}
 library(nycflights13)
@@ -346,6 +345,15 @@ The dest column contains the airport code for where a given flight is flying to.
 Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence.[@uc_influence].
 
 
+TODO; think about removing points that are outliers aka points with high cook's distance
+consider removing outliers in train but not in test, then use k-folds cross validation on test.
 
+TODO: remove points that are outliers ie dep_delay > 200 or 300 etc. or remove less than x number of points.
+then use k-folds cross validation on cross validation set where no points were removed. 
+can repeat k-folds for different seeds. 
+can just try this on my quickest model, ie linear regression. 
+should be bowl shape vs rmse vs. number of points removed.  theoretically
+
+I also considered removing based on cook's distance but this took too long to compute. 
 
 # References
