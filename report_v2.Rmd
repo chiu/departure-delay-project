@@ -1,7 +1,7 @@
 ---
-title: "knit"
+title: "STAT 652: Predicting Flight Delays Project"
 author: "Vincent Chiu"
-date: "4/1/2019"
+date: "11/26/2019"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -94,9 +94,9 @@ I also considered removing based on cook's distance but this took too long to co
 
 5 folds with 10 different random seeds
 
-# have train, CV and test setå
-# 1/3 train, 1/3 CV, 1/3 test
-# 2/3% train, 1/3%CV, wait for prof test set
+have train, CV and test setå
+1/3 train, 1/3 CV, 1/3 test
+2/3% train, 1/3%CV, wait for prof test set
 
 try lasso regression
 
