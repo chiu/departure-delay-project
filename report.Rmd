@@ -15,6 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
+```{r my_chunk, fig.cap = ""}
+attach(mtcars)
+plot(wt, mpg)
+```
 
 ## Loading the data
 ```{r}
@@ -407,5 +411,6 @@ I also considered removing based on cook's distance but this took too long to co
 
 try lasso regression
 
+see fig \ref{my_chunk}
 
 # References

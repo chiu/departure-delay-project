@@ -1,0 +1,15 @@
+---
+title: "knit"
+author: "Vincent Chiu"
+date: "4/1/2019"
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    fig_caption: yes
+---
+
+```{r myfigure, fig.cap = "My caption"}
+plot(pressure)
+```
+
+My plot is called Figure \@ref(fig:myfigure).
