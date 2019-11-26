@@ -291,16 +291,47 @@ Here I plotted root mean squared error (rmse) vs the number of trees for shrinka
 You can see that after around 5000 trees, increasing the number of trees further gives diminishing returns.
 
 
-```{r}
+
 library(EZtune)
 response <- DF$dep_delay
 eztune_df <- DF
 eztune_df$dep_delay <- NULL
 eztune_obj <- eztune(eztune_df, response, method = "gbm", optimizer = "hjn", fast = TRUE,
 cross = NULL)
-```
 
 
+> eztune_obj
+$n
+[1] 200
+
+$n.trees
+[1] 2001
+
+$interaction.depth
+[1] 10
+
+$n.minobsinnode
+[1] 7
+
+$shrinkage
+[1] 0.001
+
+$mse
+[1] 72.68835
+
+$model
+gbm::gbm(formula = y ~ ., distribution = "gaussian", data = dat, 
+    n.trees = results$n.trees, interaction.depth = results$interaction.depth, 
+    n.minobsinnode = results$n.minobsinnode, shrinkage = results$shrinkage)
+A gradient boosted model with gaussian loss function.
+2001 iterations were performed.
+There were 42 predictors of which 24 had non-zero influence.
+
+> sqrt(72)
+[1] 8.485281
+> sqrt(72.68)
+[1] 8.525257
+> 
 
 
 ```{r}
