@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Data 
 
+
 The data are on flights from three New York City airports 
 in 2013, from the `nycflights13` package. 
 Data were combined from four datasets from this package:

@@ -8,8 +8,21 @@ output:
     fig_caption: yes
 ---
 
-```{r myfigure, fig.cap = "My caption"}
+Hi there
+My plot is called Figure \@ref(fig:myfigure2).
+Figure \@ref(fig:myfigure).
+bye
+
+```{r,echo=FALSE}
+echo_flag <- FALSE
+```
+
+
+```{r myfigure, fig.cap = "My caption", echo=echo_flag}
 plot(pressure)
 ```
 
-My plot is called Figure \@ref(fig:myfigure).
+
+```{r myfigure2, fig.cap = "My caption", echo=echo_flag}
+plot(cars)
+```
