@@ -1,0 +1,91 @@
+---
+title: "Stat 652 Project"
+author: "Vincent Chiu"
+date: '2019-10-16'
+output: pdf_document
+bibliography: bibliography.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Libraries
+```{r}
+library(tidyverse)
+```
+
+
+## Loading the data
+```{r}
+library(nycflights13)
+library(Hmisc)
+set.seed(42)
+original_data <- read_csv("fltrain.csv.gz")
+DF <- original_data
+```
+
+
+prof considers ignoring stuff in planes table.
+
+very little precipitation
+no way to get info about preceding flight
+scheduled landinging time minus departure time might be good
+
+
+is both sched arrival time and dep time in the same tz?
+
+
+```{r}
+fltrain <- DF
+fltrain
+```
+
+
+```{r}
+
+```
+
+prof points: 
+
+very few 
+
+ie common for apeople with a lot of money to not report their income, ie can be biased
+if you drop people with lots of income,  not ignorable not response
+
+if there is missing at random; then you can impute without bias
+
+
+should i impute model?  there is no information? 
+
+cannot measure bias?
+
+
+potential limitations is introducing bias from not ignorable not response from including model?
+
+
+
+
+can drop the outliers? yes
+
+we have very little chance of predicting magnitude of flight delay.
+
+can we translate and take log scale?
+
+
+hadley wickham also looked at this data.
+
+replace data to rank?   
+
+
+fl <- fl %>% mutate(dep_delay=rank(dep_delay))?
+going to treat rank as continuous variable.   
+
+replace observations with normal score qqnorm(dep_delay)
+
+
+#try predicting on rank to see what happens.
+
+
+
+
