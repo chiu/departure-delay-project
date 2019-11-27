@@ -49,38 +49,54 @@ The dataset contains 43 variables in total.  The dataset is an algamation of sev
 The training dataset provided to us contains 200,000 observations.
 
 # Methods:
+We will now outline the various methods used to clean and perform prediction on the data. 
+We will discuss our techniques for data preprocessing, cross validation and the different models that we tried. 
 
 ## Data Preprocessing
 I performed data preprocessing. 
-My data preprocessing steps include the following:
-1. Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
-2. Dropping columns with too many NAs.
-3. Impute NAs for the remaining columns. 
-4. Scaling the data to work well with methods like lasso regression.
-5. Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. 
+My data preprocessing steps included the following:
 
-## Modelling
+* loading the data from a csv
+* setting the random seed for reproducibility of results 
+* casting all the columns with the character data type into the factor data type
+* converting the shed_arr_time and sched_dep_time columns into the POSIX time format so that I could accurately take the difference of them.
+* Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
+  We also drop columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
+  We drop the columns "dep_time", "arr_time", "air_time", "arr_delay", because that leaks the response variable. 
+  We drop column  "year.x" because all the values are 2013
+  We also drop tailnum because it produces too many dummy variable columns for one hot encoding. 
 
-Initially, I used the most basic cross validation technique where I have a training dataset and a holdout test dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for test.  I believe that this split gives enough data for the models to learn while 1/3 is enough data for me to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as I was only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.
+* Dropping columns which consists of over 50% NAs which include the speed column
+* Impute NAs for the remaining columns using the imputeMissings library, adding a boolean flag which indicates 1 if the associated value was 1 and 0 otherwise.
+  For example the model_flag for a given row is 1 if the model value is NA for that given row. 
+* Scaling the data to work well with methods like lasso regression.
+* Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. 
+  This is because I assume that extreme delays of of over 30 minutes late are freak accidents which cannot be accurately predicted by the available explanatory variables. 
 
-## Basic Models
+
+## Cross Validation 
+Initially, I used the most basic cross validation technique where I have a training dataset and a cross validation dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for cross validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  I believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were intially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.
+
+
+## Models
+We first explored some basic models to establish a baseline performance and compared it to our most sophisticated model, the Generalized Boosted Regression Model (GBM).
+
+### Basic Models
 dep_delay is the number of minutes that the plane either departs early or late.  Negative numbers are for early departures and positive numbers are for the number of minutes the plane is late.
 First, I used a basic model of simply predicting the dep_delay to always be 0. This was done to establish baseline performance.  
 This model had an root mean squared error (RMSE) of 8.30571. TODO
 The model in which I predicted the mean for all the predictions had an RMSE of    TODO. 
 
-## Linear Regression
+### Linear Regression
 Then I tried linear regression with dep_delay as the response variables and all the other remaining variables as the explanatory variables.
 This model was better than predicting the mean with an RMSE of TODO. 
 This suggests that there is some relationship between the dep_delay and the explanatory variables. 
 
-## GBM 
-Aftewards, I tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after I tuned it to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. 
-According to the vignette, the rmse can always be improved by decreasing shrinkage but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns. 
+### Generalized Boosted Regression Model (GBM)
+Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
 
 
 # Results
-
 In regression and gbm, I found different features to be important.  For the best gbm model, dest which refers to which airport a given plane is going to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one hot encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try Anova in order to measure the statistical significance of dest. Performing anova on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
 
 
@@ -89,7 +105,18 @@ TODO: try interaction terms , try anova.
 
 # Conclusion and Discussion 
 
-Conclusion:
+
+## Discussion
+
+We considered removing outliers in train but not in test, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross validation set. 
+We considered removing points that are outliers aka points with high cook's distance in order to train a better model.
+Howevever, this was infeasible as we did not have enough computational resources available and it took too long. 
+
+
+
+
+## Conclusion
+
 In conclusion, out of the methods that we covered in class, I found gradient boosted models to provide the best performance based on having the lowest root mean squared error on the hold out test set.
 
 Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute.
@@ -98,8 +125,7 @@ The dest column contains the airport code for where a given flight is flying to.
 Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence.[@uc_influence].
 
 
-TODO; think about removing points that are outliers aka points with high cook's distance
-consider removing outliers in train but not in test, then use k-folds cross validation on test.
+## Future Work
 
 TODO: remove points that are outliers ie dep_delay > 200 or 300 etc. or remove less than x number of points.
 then use k-folds cross validation on cross validation set where no points were removed. 
@@ -118,316 +144,8 @@ have train, CV and test setå
 try lasso regression
 
 
-
-
 # Code
-
-
-## Loading Libraries
-```{r}
-library(tidyverse)
-```
-
-```{r my_chunk, fig.cap = ""}
-attach(mtcars)
-plot(wt, mpg)
-```
-
-## Loading the data
-```{r}
-library(nycflights13)
-library(Hmisc)
-set.seed(42)
-original_data <- read_csv("fltrain.csv.gz")
-DF <- original_data
-```
-
-# turning all columns with datatype characters to factors. 
-```{r}
-DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
-                                       as.factor)
-DF$flight <- as.factor(DF$flight)
-str(DF)
-```
-
-
-# Methods 
-## Preprocessing
-
-Data preprocessing steps include the following:
-- Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
-- Dropping columns with too many NAs.
-- Impute NAs for the remaining columns. 
-- Scaling the data to work well with methods like lasso regression.
-
-
-## - Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
-
-dropping the columns "dep_time", "arr_time", "air_time", "arr_delay", because that leaks the response variable. 
-dropping column  "year.x" because all the values are 2013
-dropping tailnum because it produces too many dummy variable columns for one hot encoding. 
-
-```{r}
-library(lubridate)
-DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
-DF$sched_arr_time_hour <- hour(DF$sched_arr_time_posix)
-DF$sched_arr_time_minute <- minute(DF$sched_arr_time_posix)
-
-#num minute is number of minutes since start of day for scheduled arrival time
-DF$sched_arr_time_num_minute <- 60*DF$sched_arr_time_hour + DF$sched_arr_time_minute
-
-DF$sched_dep_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_dep_time),4 , pad="0"),format="%H%M")
-DF$sched_dep_time_hour <- hour(DF$sched_dep_time_posix)
-DF$sched_dep_time_minute <- minute(DF$sched_dep_time_posix)
-#num minute is number of minutes since start of day for scheduled depival time
-DF$sched_dep_time_num_minute <- 60*DF$sched_dep_time_hour + DF$sched_dep_time_minute
-```
-```{r}
-select(original_data, time_hour, sched_dep_time, sched_arr_time, tz, tzone)
-select(DF, sched_arr_time, sched_arr_time_hour)
-```
-
-```{r}
-DF$sched_air_time <- DF$sched_arr_time_posix - DF$sched_dep_time_posix
-drops <- c('sched_arr_time_posix', 'sched_arr_time_hour', 'sched_dep_time_posix', 'sched_dep_time_hour', 'sched_dep_time', 'sched_arr_time', 'hour', 'time', 'minute', 'time_hour' )
-DF <- DF[ , !(names(DF) %in% drops)]
-```
-
-
-```{r}
-drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
-DF <- DF[ , !(names(DF) %in% drops)]
-```
-
-
-
-```{r}
-DF
-```
-
-
-
-```{r}
-## Remove columns with more than 50% NA
-DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
-```
-
-```{r}
-DF$sched_air_time <- as.numeric(DF$sched_air_time)
-library(imputeMissings)
-impute_model <- imputeMissings::compute(DF, method="median/mode")
-impute_model
-DF <- impute(DF, object=impute_model, flag=TRUE)
-DF <- DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are identical to each other. 
-```
-
-```{r}
-numeric_only_df <- dplyr::select_if(DF, is.numeric)
-library(corrplot)
-corrplot(cor(numeric_only_df), type = 'lower')
-```
-
-# try features scaling
-```{r}
-dep_delay_vec <- DF$dep_delay
-DF$dep_delay <- NULL
-head(DF)
-
-library(dplyr)
-DF <- DF %>% mutate_if(is.numeric, scale)
-head(DF)
-DF$dep_delay <- dep_delay_vec
-```
-
-#take out extreme departure delays
-```{r}
-DF<-DF[DF$dep_delay < 30,]
-```
-
-```{r}
-set.seed(42)
-DF$flight <- NULL
-train_index <- sample(1:nrow(DF),size=2*nrow(DF)/3,replace=FALSE)
-train_df <- DF[train_index,]
-test_df <- DF[-train_index,]
-```
-
-
-# predicting 0
-```{r}
-rmse = mean((test_df$dep_delay-0)^2) %>% sqrt()
-rmse
-```
-
-# predicting the mean
-```{r}
-rmse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)%>% sqrt()
-rmse
-```
-
-
-# predicting the median
-```{r}
-rmse = mean((test_df$dep_delay-median(train_df$dep_delay))^2)%>% sqrt()
-rmse
-```
-
-
-# linear regression with dep
-```{r}
-model <- lm(dep_delay ~ ., data=train_df)
-model_without_dep <-  lm(dep_delay ~ .-dest, data=train_df)
-anova(model, model_without_dep)
-summary <- round(summary(model)$coefficients,6)
-sorteddf <- summary[order(summary[,ncol(summary)]),]
-head(sorteddf)
-```
-
-
-```{r}
-head(sorteddf)
-```
-
-```{r}
-lm_test_df <- test_df
-
-in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
-lm_test_df <- lm_test_df[ !lm_test_df$model %in% in_test_but_not_train, ]
-
-in_test_but_not_train <- setdiff(unique(lm_test_df$dest), unique(train_df$dest))
-lm_test_df <- lm_test_df[ !lm_test_df$dest %in% in_test_but_not_train, ]
-
-preds = predict(model, newdata=lm_test_df)
-rmse = sqrt(mean((lm_test_df$dep_delay - preds)^2))
-rmse
-```
-
-# gbm
-```{r}
-set.seed(42)
-library(gbm)
-model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=1000, shrinkage=0.003) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=1000)
-rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-rmse
-summary(model)
-```
-
-Here, you can see the relative influence for each variable for gbm.  
-For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
-The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
-
-
-
-```{r}
-model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=1000)
-rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-rmse
-summary(model)
-```
-
-```{r}
-rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-rmse
-```
-
-
-set.seed(42)
-
-x <- 2^seq(5,14, by=1)
-rmse_vec <- numeric(length(x))
-count <- 1
-for (val in x) {
-  hboost <- gbm(
-    dep_delay ~ .,
-    data = train_df,
-    n.trees = val,
-    distribution = 'gaussian',
-    shrinkage = 0.01
-  )
-  preds = predict(hboost, n.trees = val, newdata = test_df)
-  mse = mean((test_df$dep_delay - preds) ^ 2)
-  rmse <- sqrt(mse)
-  rmse_vec[count] <- rmse
- 
-  print(val)
-  print(rmse)
-  count = count + 1
-}
-
-plot(x, rmse_vec)
-
-
-
-
-summary(hboost)
-class(summary(hboost))
-summary <- summary(hboost)
-write.csv(summary,'16384trees_gbm.csv')
-
-
-```{r}
-gbm_benchmark<-read_csv('shrinkage_0point01_numtrees_32_to_16384_gbm_benchmark.csv')
-gbm_benchmark
-```
-
-Above values are for gbm with shrinkage of 0.01
-Analysis:
-
-Tuning gbm
-![alt text here](0point01_shrinkage_gbm_rmse_vs_num_trees.png)
-
-Here I plotted root mean squared error (rmse) vs the number of trees for shrinkage of 0.01 and all other variables as default for gbm. 
-You can see that after around 5000 trees, increasing the number of trees further gives diminishing returns.
-
-
-
-library(EZtune)
-response <- DF$dep_delay
-eztune_df <- DF
-eztune_df$dep_delay <- NULL
-eztune_obj <- eztune(eztune_df, response, method = "gbm", optimizer = "hjn", fast = TRUE,
-cross = NULL)
-
-
-> eztune_obj
-$n
-[1] 200
-
-$n.trees
-[1] 2001
-
-$interaction.depth
-[1] 10
-
-$n.minobsinnode
-[1] 7
-
-$shrinkage
-[1] 0.001
-
-$mse
-[1] 72.68835
-
-$model
-gbm::gbm(formula = y ~ ., distribution = "gaussian", data = dat, 
-    n.trees = results$n.trees, interaction.depth = results$interaction.depth, 
-    n.minobsinnode = results$n.minobsinnode, shrinkage = results$shrinkage)
-A gradient boosted model with gaussian loss function.
-2001 iterations were performed.
-There were 42 predictors of which 24 had non-zero influence.
-
-> sqrt(72)
-[1] 8.485281
-> sqrt(72.68)
-[1] 8.525257
-> 
-
-
-
+In separate file. 
 
 # References
 
