@@ -253,7 +253,17 @@ write.csv(summary,'0point001_16384trees_gbm.csv')
 ```
 
 
-
+```{r}
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+rmse
+```
+```{r}
+summary(hboost)
+```
+```{r}
+#gbm_benchmark2 <- data.frame("num_trees"=x, "rmse"=rmse_vec)
+gbm_benchmark2 <- read_csv('shrinkage_0point001_numtrees_32_to_16384_gbm_benchmark_v2.csv')
+```
 
 ```{r}
 gbm_benchmark<-read_csv('shrinkage_0point01_numtrees_32_to_16384_gbm_benchmark.csv')
