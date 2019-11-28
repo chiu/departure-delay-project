@@ -13,7 +13,9 @@ bibliography: bibliography.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+```{r,echo=FALSE}
+echo_flag <- FALSE
+```
 
 # Code
 
@@ -107,6 +109,10 @@ DF <- DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are 
 ```{r}
 numeric_only_df <- dplyr::select_if(DF, is.numeric)
 library(corrplot)
+```
+
+
+```{r corrplot, fig.cap = "My caption", echo=echo_flag}
 corrplot(cor(numeric_only_df), type = 'lower')
 ```
 
@@ -121,6 +127,34 @@ DF <- DF %>% mutate_if(is.numeric, scale)
 head(DF)
 DF$dep_delay <- dep_delay_vec
 ```
+
+# Exploratory Data Analysis
+
+```{r}
+
+numeric_DF <- dplyr::select_if(DF, is.numeric) %>%  scale()
+
+```
+
+```{r}
+prcomp_res <- prcomp(numeric_DF)
+sdev <- prcomp_res$sdev
+sdev
+```
+
+### all four components at same time
+```{r}
+colSums(prcomp_res$x^2)/sum(numeric_DF^2)
+```
+
+```{r}
+rotation <- as.data.frame(prcomp_res$rotation)
+rotation[order(-abs(rotation$PC1)),]
+```
+```{r}
+head(rotation[order(-abs(rotation$PC2)),])
+```
+
 
 #take out extreme departure delays
 ```{r}

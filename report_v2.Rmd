@@ -32,6 +32,7 @@ plot(pressure)
 plot(cars)
 ```
 
+
 1. Introduction (brief)
 2. Data (brief)
 3. Methods
@@ -45,7 +46,7 @@ The goal of this project is to predict the response variable, departure delays f
 
 # Data
 The dataset consists of information about all the flights leaving from New York City in 2013.
-The dataset contains 43 variables in total.  The dataset is an algamation of several datasets including datasets containing information on weather, the airports, the flights, and the models of airplanes. 
+The dataset contains 43 variables in total.  The dataset is an amalgamation of several datasets including datasets containing information on weather, the airports, the flights, and the models of airplanes. 
 The training dataset provided to us contains 200,000 observations.
 
 # Methods:
@@ -66,16 +67,35 @@ My data preprocessing steps included the following:
   We drop column  "year.x" because all the values are 2013
   We also drop tailnum because it produces too many dummy variable columns for one hot encoding. 
 
-* Dropping columns which consists of over 50% NAs which include the speed column
-* Impute NAs for the remaining columns using the imputeMissings library, adding a boolean flag which indicates 1 if the associated value was 1 and 0 otherwise.
-  For example the model_flag for a given row is 1 if the model value is NA for that given row. 
+* Dropping columns which consists of over 50% NAs which include the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.     We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.  However, there are limitations to this approach.  It is possible, that the missingness of the plane model variable is related to dep_delay.  In this scenario, we may be creating an inferior statistical learning model by keeping the variable model and imputing it.  
+* Impute NAs for the remaining columns using the imputeMissings library, adding a Boolean flag which indicates 1 if the associated value was 1 and 0 otherwise.
+  For example, the model_flag for a given row is 1 if the model value is NA for that given row. 
 * Scaling the data to work well with methods like lasso regression.
 * Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. 
   This is because I assume that extreme delays of of over 30 minutes late are freak accidents which cannot be accurately predicted by the available explanatory variables. 
 
 
+## Exploratory Analysis
+
+### Correlations
+First, we created a correlation plot for the numeric variables to see if there any correlations between the variables.
+
+We see that there is very little correlation between the response variable dep_delay and any of the other variables. 
+Some of the strongest correlations include the correlation between distance and longitude and time zone and a smaller correlation between distance and latitude. This makes sense as most of the planes are inter US flights from west to east or vice versa, there is not as much distance flown in the north south direction. 
+There is also 
+
+Please see Figure \@ref(fig:corrplot).
+
+
+## Principal Component Analysis (PCA)
+Next we performed PCA on only the numeric variables as techniques to perform PCA on mixed datasets (numerical and categorical) was not covered in class. 
+When looking at the contribution of each variable to the first principal component, we notice that the variables lon, distance, tz, seats, alt, sched_air_time have the greatest absolute coefficients for the first principal component.  This suggest that these variables are amongst the most important for explaining the variance in the dataset. 
+
+However, it turns out that variables like lon, distance and tz are not important for predicting dep_delay according to the gbm model.  This maybe be because although variables like lon, distance and tz help explain most of the variance in the dataset, they have a weak relationship with dep_delay. 
+
+
 ## Cross Validation 
-Initially, I used the most basic cross validation technique where I have a training dataset and a cross validation dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for cross validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  I believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were intially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.
+Initially, I used the most basic cross validation technique where I have a training dataset and a cross validation dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for cross validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  I believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
 
 
 ## Models
@@ -97,7 +117,7 @@ Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model h
 
 
 # Results
-In regression and gbm, I found different features to be important.  For the best gbm model, dest which refers to which airport a given plane is going to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one hot encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try Anova in order to measure the statistical significance of dest. Performing anova on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
+In regression and gbm, I found different features to be important.  For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try using ANOVA in order to measure the statistical significance of dest. Performing ANOVA on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
 
 
 TODO: try interaction terms , try anova. 
@@ -108,9 +128,9 @@ TODO: try interaction terms , try anova.
 
 ## Discussion
 
-We considered removing outliers in train but not in test, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross validation set. 
-We considered removing points that are outliers aka points with high cook's distance in order to train a better model.
-Howevever, this was infeasible as we did not have enough computational resources available and it took too long. 
+We considered removing outliers in train but not in test, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. 
+We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high cook's distances.
+However, this was infeasible as we did not have enough computational resources available and it took too long. 
 
 
 
@@ -122,7 +142,7 @@ In conclusion, out of the methods that we covered in class, I found gradient boo
 Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute.
 
 The dest column contains the airport code for where a given flight is flying to.
-Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence.[@uc_influence].
+Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence. [@uc_influence].
 
 
 ## Future Work
@@ -130,14 +150,14 @@ Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the mo
 TODO: remove points that are outliers ie dep_delay > 200 or 300 etc. or remove less than x number of points.
 then use k-folds cross validation on cross validation set where no points were removed. 
 can repeat k-folds for different seeds. 
-can just try this on my quickest model, ie linear regression. 
-should be bowl shape vs rmse vs. number of points removed.  theoretically
+can just try this on my quickest model, i.e. linear regression. 
+should be bowl shape vs RMSE vs. number of points removed.  theoretically
 
 I also considered removing based on cook's distance but this took too long to compute. 
 
 5 folds with 10 different random seeds
 
-have train, CV and test setå
+have train, CV and test set
 1/3 train, 1/3 CV, 1/3 test
 2/3% train, 1/3%CV, wait for prof test set
 
