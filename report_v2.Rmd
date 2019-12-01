@@ -32,6 +32,7 @@ We will discuss our techniques for data preprocessing, and cross validation, and
 ## Data Preprocessing
 I performed data preprocessing on the nycflights13 dataset. 
 My data preprocessing steps include the following:
+
 * loading the data from a csv
 * setting the random seed for reproducibility of results 
 * casting all the columns with the character data type into the factor data type
@@ -85,11 +86,22 @@ This suggests that there is some relationship between the dep_delay and the expl
 TODO explain linear regression more
 
 ### Generalized Boosted Regression Model (GBM)
-Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
+  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
+Please see table @\ref{tab:gbmsummary} for a table of the relative influence of each explanatory variable. 
+  Here, you can see the relative influence for each variable for gbm.  
+For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
+The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
 
 
 # Results
-In regression and gbm, I found different features to be important.  For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try using ANOVA in order to measure the statistical significance of dest. Performing ANOVA on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
+In regression and gbm, I found different features to be important.  
+
+## GBM
+For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  
+
+
+## Linear Regression
+On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try using ANOVA in order to measure the statistical significance of dest. Performing ANOVA on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
 
 
 
@@ -299,6 +311,108 @@ train_df <- DF[train_index,]
 test_df <- DF[-train_index,]
 ```
 
+
+# predicting 0
+```{r}
+rmse = mean((test_df$dep_delay-0)^2) %>% sqrt()
+rmse
+```
+
+# predicting the mean
+```{r}
+rmse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)%>% sqrt()
+rmse
+```
+
+
+# predicting the median
+```{r}
+rmse = mean((test_df$dep_delay-median(train_df$dep_delay))^2)%>% sqrt()
+rmse
+```
+
+
+# linear regression with dep
+```{r}
+model <- lm(dep_delay ~ ., data=train_df)
+model_without_dep <-  lm(dep_delay ~ .-dest, data=train_df)
+anova(model, model_without_dep)
+summary <- round(summary(model)$coefficients,6)
+sorteddf <- summary[order(summary[,ncol(summary)]),]
+head(sorteddf)
+```
+
+
+```{r}
+head(sorteddf)
+```
+
+```{r}
+lm_test_df <- test_df
+
+in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
+lm_test_df <- lm_test_df[ !lm_test_df$model %in% in_test_but_not_train, ]
+
+in_test_but_not_train <- setdiff(unique(lm_test_df$dest), unique(train_df$dest))
+lm_test_df <- lm_test_df[ !lm_test_df$dest %in% in_test_but_not_train, ]
+
+preds = predict(model, newdata=lm_test_df)
+rmse = sqrt(mean((lm_test_df$dep_delay - preds)^2))
+rmse
+```
+
+
+# gbm
+```{r}
+library(gbm)
+
+train_gbm <- function(filename){
+set.seed(42)
+model <- gbm(dep_delay ~ ., data=train_df,
+              n.trees=100, shrinkage=0.1) # default shrinkage = 0.1
+preds = predict(model, newdata=test_df, n.trees=100)
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+summary(model)
+saveRDS(model, filename)
+return(model)
+}
+
+destfile <- "model2.rds"
+if (!file.exists(destfile)) {
+   train_gbm(destfile)
+ }
+model <- readRDS(destfile)
+
+```
+
+
+```{r gbmsummary, echo=echo_flag}
+gbmsummary <- summary(model)
+knitr::kable(
+  head(gbmsummary), booktabs = TRUE,
+  caption = 'gbm relative influence'
+)
+```
+
+Here, you can see the relative influence for each variable for gbm.  
+For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
+The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
+
+
+
+```{r}
+model <- gbm(dep_delay ~ ., data=train_df,
+              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
+preds = predict(model, newdata=test_df, n.trees=1000)
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+rmse
+summary(model)
+```
+
+```{r}
+rmse = sqrt(mean((test_df$dep_delay - preds)^2))
+rmse
+```
 
 
 # References
