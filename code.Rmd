@@ -48,10 +48,6 @@ str(DF)
 ```
 
 
-
-
-
-
 ```{r}
 library(lubridate)
 DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
@@ -85,11 +81,9 @@ DF <- DF[ , !(names(DF) %in% drops)]
 ```
 
 
-
 ```{r}
 DF
 ```
-
 
 
 ```{r}

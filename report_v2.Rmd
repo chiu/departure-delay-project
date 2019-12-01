@@ -13,32 +13,6 @@ bibliography: bibliography.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Hi there
-My plot is called Figure \@ref(fig:myfigure2).
-Figure \@ref(fig:myfigure).
-bye
-
-```{r,echo=FALSE}
-echo_flag <- FALSE
-```
-
-
-```{r myfigure, fig.cap = "My caption", echo=echo_flag}
-plot(pressure)
-```
-
-
-```{r myfigure2, fig.cap = "My caption", echo=echo_flag}
-plot(cars)
-```
-
-
-1. Introduction (brief)
-2. Data (brief)
-3. Methods
-4. Results
-5. Conclusions and Discussion 
-
 
 # Introduction
 The goal of this project is to predict the response variable, departure delays for a particular flight given the explanatory variables. 
@@ -48,24 +22,24 @@ The goal of this project is to predict the response variable, departure delays f
 The dataset consists of information about all the flights leaving from New York City in 2013.
 The dataset contains 43 variables in total.  The dataset is an amalgamation of several datasets including datasets containing information on weather, the airports, the flights, and the models of airplanes. 
 The training dataset provided to us contains 200,000 observations.
+Please see table \@ref(tab:table1) for what the data looks like. 
+
 
 # Methods:
 We will now outline the various methods used to clean and perform prediction on the data. 
-We will discuss our techniques for data preprocessing, cross validation and the different models that we tried. 
+We will discuss our techniques for data preprocessing, and cross validation, and the different models that we tried. 
 
 ## Data Preprocessing
 I performed data preprocessing. 
-My data preprocessing steps included the following:
+My data preprocessing steps include the following:
 
 * loading the data from a csv
 * setting the random seed for reproducibility of results 
 * casting all the columns with the character data type into the factor data type
-* converting the shed_arr_time and sched_dep_time columns into the POSIX time format so that I could accurately take the difference of them.
-* Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
-  We also drop columns that contain data from after the planes' departure which may leak information about the response variable dep_delay.
-  We drop the columns "dep_time", "arr_time", "air_time", "arr_delay", because that leaks the response variable. 
-  We drop column  "year.x" because all the values are 2013
-  We also drop tailnum because it produces too many dummy variable columns for one hot encoding. 
+* converting the shed_arr_time and sched_dep_time columns into the POSIX time format so that I can accurately take the difference of them.
+* Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay. We drop columns "dep_time", "arr_time", "air_time", and "arr_delay".
+* We drop column  "year.x" because all the values are 2013
+* We also drop tailnum because it produces too many dummy variable columns for one hot encoding. 
 
 * Dropping columns which consists of over 50% NAs which include the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.     We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.  However, there are limitations to this approach.  It is possible, that the missingness of the plane model variable is related to dep_delay.  In this scenario, we may be creating an inferior statistical learning model by keeping the variable model and imputing it.  
 * Impute NAs for the remaining columns using the imputeMissings library, adding a Boolean flag which indicates 1 if the associated value was 1 and 0 otherwise.
@@ -120,6 +94,7 @@ Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model h
 In regression and gbm, I found different features to be important.  For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try using ANOVA in order to measure the statistical significance of dest. Performing ANOVA on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
 
 
+
 TODO: try interaction terms , try anova. 
 
 
@@ -165,7 +140,101 @@ try lasso regression
 
 
 # Code
-In separate file. 
+
+
+## Preparing the programming environment
+
+```{r,echo=FALSE}
+echo_flag <- FALSE
+```
+
+### Loading Libraries
+```{r}
+library(tidyverse)
+```
+
+## Data Preprocessing
+
+### Loading the data
+```{r}
+library(nycflights13)
+library(Hmisc)
+set.seed(42)
+original_data <- read_csv("fltrain.csv.gz")
+DF <- original_data
+```
+
+```{r table1, echo=echo_flag}
+knitr::kable(
+  head(original_data), booktabs = TRUE,
+  caption = 'A table of the first few rows of the nycflights13 data.'
+)
+```
+
+
+turning all columns with datatype characters to factors. 
+```{r}
+DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
+                                       as.factor)
+DF$flight <- as.factor(DF$flight)
+str(DF)
+```
+
+
+```{r}
+library(lubridate)
+DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
+DF$sched_arr_time_hour <- hour(DF$sched_arr_time_posix)
+DF$sched_arr_time_minute <- minute(DF$sched_arr_time_posix)
+
+#num minute is number of minutes since start of day for scheduled arrival time
+DF$sched_arr_time_num_minute <- 60*DF$sched_arr_time_hour + DF$sched_arr_time_minute
+
+DF$sched_dep_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_dep_time),4 , pad="0"),format="%H%M")
+DF$sched_dep_time_hour <- hour(DF$sched_dep_time_posix)
+DF$sched_dep_time_minute <- minute(DF$sched_dep_time_posix)
+#num minute is number of minutes since start of day for scheduled depival time
+DF$sched_dep_time_num_minute <- 60*DF$sched_dep_time_hour + DF$sched_dep_time_minute
+```
+```{r}
+select(original_data, time_hour, sched_dep_time, sched_arr_time, tz, tzone)
+select(DF, sched_arr_time, sched_arr_time_hour)
+```
+
+```{r}
+DF$sched_air_time <- DF$sched_arr_time_posix - DF$sched_dep_time_posix
+drops <- c('sched_arr_time_posix', 'sched_arr_time_hour', 'sched_dep_time_posix', 'sched_dep_time_hour', 'sched_dep_time', 'sched_arr_time', 'hour', 'time', 'minute', 'time_hour' )
+DF <- DF[ , !(names(DF) %in% drops)]
+```
+
+```{r}
+drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
+DF <- DF[ , !(names(DF) %in% drops)]
+```
+
+```{r}
+## Remove columns with more than 50% NA
+DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
+```
+
+```{r}
+DF$sched_air_time <- as.numeric(DF$sched_air_time)
+library(imputeMissings)
+impute_model <- imputeMissings::compute(DF, method="median/mode")
+impute_model
+DF <- impute(DF, object=impute_model, flag=TRUE)
+DF <- DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are identical to each other. 
+```
+
+```{r}
+numeric_only_df <- dplyr::select_if(DF, is.numeric)
+library(corrplot)
+```
+
+```{r corrplot, fig.cap = "My caption", echo=echo_flag}
+corrplot(cor(numeric_only_df), type = 'lower')
+```
+
 
 # References
 
