@@ -30,9 +30,8 @@ We will now outline the various methods used to clean and perform prediction on 
 We will discuss our techniques for data preprocessing, and cross validation, and the different models that we tried. 
 
 ## Data Preprocessing
-I performed data preprocessing. 
+I performed data preprocessing on the nycflights13 dataset. 
 My data preprocessing steps include the following:
-
 * loading the data from a csv
 * setting the random seed for reproducibility of results 
 * casting all the columns with the character data type into the factor data type
@@ -40,13 +39,10 @@ My data preprocessing steps include the following:
 * Dropping columns that contain data from after the planes' departure which may leak information about the response variable dep_delay. We drop columns "dep_time", "arr_time", "air_time", and "arr_delay".
 * We drop column  "year.x" because all the values are 2013
 * We also drop tailnum because it produces too many dummy variable columns for one hot encoding. 
-
-* Dropping columns which consists of over 50% NAs which include the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.     We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.  However, there are limitations to this approach.  It is possible, that the missingness of the plane model variable is related to dep_delay.  In this scenario, we may be creating an inferior statistical learning model by keeping the variable model and imputing it.  
-* Impute NAs for the remaining columns using the imputeMissings library, adding a Boolean flag which indicates 1 if the associated value was 1 and 0 otherwise.
-  For example, the model_flag for a given row is 1 if the model value is NA for that given row. 
-* Scaling the data to work well with methods like lasso regression.
-* Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. 
-  This is because I assume that extreme delays of of over 30 minutes late are freak accidents which cannot be accurately predicted by the available explanatory variables. 
+* Dropping columns which consists of over 50% NAs which include the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
+* Afterwards, I impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to dep_delay.  In this scenario, we may be creating an inferior feature set by keeping the variable 'model' and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane model and dep_delay if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the imputeMissings library, adding a Boolean flag which indicates 1 if the associated value was 1 and 0 otherwise. For example, the "model_flag" for a given row is 1 if the "model" value was NA for that given row.  Hence, no information is lost from our imputation. 
+* Normalizing the data to work well with methods like lasso regression.
+* Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. 
 
 
 ## Exploratory Analysis
@@ -56,16 +52,17 @@ First, we created a correlation plot for the numeric variables to see if there a
 
 We see that there is very little correlation between the response variable dep_delay and any of the other variables. 
 Some of the strongest correlations include the correlation between distance and longitude and time zone and a smaller correlation between distance and latitude. This makes sense as most of the planes are inter US flights from west to east or vice versa, there is not as much distance flown in the north south direction. 
-There is also 
-
-Please see Figure \@ref(fig:corrplot).
+Please see Figure \@ref(fig:corrplot) for the correlation plot (Click on the number after Figure to jump to plot).
 
 
 ## Principal Component Analysis (PCA)
 Next we performed PCA on only the numeric variables as techniques to perform PCA on mixed datasets (numerical and categorical) was not covered in class. 
-When looking at the contribution of each variable to the first principal component, we notice that the variables lon, distance, tz, seats, alt, sched_air_time have the greatest absolute coefficients for the first principal component.  This suggest that these variables are amongst the most important for explaining the variance in the dataset. 
+When looking at the contribution of each variable to the first principal component, we notice that the variables lon, distance, tz, seats, alt, sched_air_time have the greatest absolute coefficients for the first principal component.  The fact that the aforementioned variables have large coefficients in the first principal component suggests that they are highly correlated with each other.  The fact that dep_delay has a small coefficient in the first principal component suggests that dep_delay is not highly correlated with any of the above variables.
 
-However, it turns out that variables like lon, distance and tz are not important for predicting dep_delay according to the gbm model.  This maybe be because although variables like lon, distance and tz help explain most of the variance in the dataset, they have a weak relationship with dep_delay. 
+As expected, it turns out that variables like lon, distance and tz are not important for predicting dep_delay according to the gbm model.  This maybe be because although variables like lon, distance and tz help explain most of the variance in the dataset, they have a weak relationship with dep_delay. 
+
+Please see table \@ref(tab:pve) for the proportion of variance explained by each principal component. 
+Please see table \@ref(tab:pcarotation) for the coefficient of each variable for each principal component ordered by magnitude of coefficient. 
 
 
 ## Cross Validation 
@@ -85,6 +82,7 @@ The model in which I predicted the mean for all the predictions had an RMSE of  
 Then I tried linear regression with dep_delay as the response variables and all the other remaining variables as the explanatory variables.
 This model was better than predicting the mean with an RMSE of TODO. 
 This suggests that there is some relationship between the dep_delay and the explanatory variables. 
+TODO explain linear regression more
 
 ### Generalized Boosted Regression Model (GBM)
 Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
@@ -177,7 +175,6 @@ turning all columns with datatype characters to factors.
 DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
                                        as.factor)
 DF$flight <- as.factor(DF$flight)
-str(DF)
 ```
 
 
@@ -234,6 +231,74 @@ library(corrplot)
 ```{r corrplot, fig.cap = "My caption", echo=echo_flag}
 corrplot(cor(numeric_only_df), type = 'lower')
 ```
+
+
+## try features scaling
+```{r}
+dep_delay_vec <- DF$dep_delay
+DF$dep_delay <- NULL
+head(DF)
+
+library(dplyr)
+DF <- DF %>% mutate_if(is.numeric, scale)
+head(DF)
+DF$dep_delay <- dep_delay_vec
+```
+
+## Exploratory Data Analysis
+
+```{r}
+numeric_DF <- dplyr::select_if(DF, is.numeric) %>%  scale()
+```
+
+```{r}
+prcomp_res <- prcomp(numeric_DF)
+sdev <- prcomp_res$sdev
+sdev
+```
+
+### all four components at same time
+proportion of variance explained by each component
+```{r}
+pve <- colSums(prcomp_res$x^2)/sum(numeric_DF^2)
+```
+
+```{r pve, echo=echo_flag}
+knitr::kable(
+  head(pve), booktabs = TRUE,
+  caption = 'proportion of variance explained by each principal component'
+)
+```
+
+
+```{r}
+rotation <- as.data.frame(prcomp_res$rotation)
+rotation[order(-abs(rotation$PC1)),]
+```
+```{r}
+pca_rotation <- head(rotation[order(-abs(rotation$PC2)),])
+```
+
+```{r pcarotation, echo=echo_flag}
+knitr::kable(
+  head(pca_rotation), booktabs = TRUE,
+  caption = 'coefficients for each variable on each principal component'
+)
+```
+
+### take out extreme departure delays
+```{r}
+DF<-DF[DF$dep_delay < 30,]
+```
+
+```{r}
+set.seed(42)
+DF$flight <- NULL
+train_index <- sample(1:nrow(DF),size=2*nrow(DF)/3,replace=FALSE)
+train_df <- DF[train_index,]
+test_df <- DF[-train_index,]
+```
+
 
 
 # References
