@@ -80,16 +80,14 @@ This model had an root mean squared error (RMSE) of 8.30571. TODO
 The model in which I predicted the mean for all the predictions had an RMSE of    TODO. 
 
 ### Linear Regression
+A linear regression model assumes a linear relationship between the explanatory variables and the response variable.  The model minimizes the squared loss function.  This minimization process generates coefficients which are used for a linear combintation of the explanatory variables.  The linear combination is the prediction. 
 Then I tried linear regression with dep_delay as the response variables and all the other remaining variables as the explanatory variables.
 This model was better than predicting the mean with an RMSE of TODO. 
 This suggests that there is some relationship between the dep_delay and the explanatory variables. 
-TODO explain linear regression more
 
 ### Generalized Boosted Regression Model (GBM)
-How boosted regression model works is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the overall residuals by the same amount.  The benefit of a smaller shrinkage is that you have a stronger ensemble of trees that can reach a lower cross validation loss. This iterative predicton process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
-
-
-  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE on the test dataset after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
+How boosted regression models work is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the enssemble of base classifiers trained so far.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
+  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE of 7.94458 on the cross validation set after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
 Please see table @\ref{tab:gbmsummary} for a table of the relative influence of each explanatory variable. 
   Here, you can see the relative influence for each variable for gbm.  
 For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
@@ -98,15 +96,18 @@ The relative influence for a given variable is the average of these improvements
 
 # Results
 In regression and gbm, I found different features to be important.  
+Please see table @\ref{tab:benchmarkdf} for all the models and their root mean squared error (RMSE) on the cross validation set.
 
 ## GBM
-For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression.  
+For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression. Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute. The dest column contains the airport code for where a given flight is flying to. Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence. [@uc_influence].  dest is the destination airport code. 'sched_dep_time_num_minute' is the number of minutes since the beginning of a given day for that flight.  'model' is the plane nodel. 
 
 
 ## Linear Regression
 On the other hand, dest does appear as an important feature in linear regression as well but it is not the most important feature.  I surmise that if we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from dest then, it might appear as the most important feature for linear regression as well. We can try using ANOVA in order to measure the statistical significance of dest. Performing ANOVA on comparing linear regression model with and without dest, it was determined that due to the low p-value of 0.0001863 associated with having dest that keeping at least one of the one hot categorical variables derived from dest is beneficial for the linear regression model. 
 
 
+## Comparison
+Dest was most important feature in gbm. It is possible that dest is important in combination with other variables which is something that the linear model without interaction terms cannot capture the relationship of whereas gbm can discover these non linear relationships. 
 
 TODO: try interaction terms , try anova. 
 
@@ -116,25 +117,18 @@ TODO: try interaction terms , try anova.
 
 ## Discussion
 
-We considered removing outliers in train but not in test, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. 
+We considered removing outliers in terms of 'dep_delay' in train but not in test, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. 
 We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high cook's distances.
 However, this was infeasible as we did not have enough computational resources available and it took too long. 
 
 
-
-
 ## Conclusion
-
-In conclusion, out of the methods that we covered in class, I found gradient boosted models to provide the best performance based on having the lowest root mean squared error on the hold out test set.
-
-Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute.
-
-The dest column contains the airport code for where a given flight is flying to.
-Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence. [@uc_influence].
+  None of the models that we tried performed particularly well.  We surmise that this may be due to the explanatory variables having a weak relationship with the 'dep_delay' variable.  There is a lack of information about a particular flight before it reaches NYC. Instead, we get information about where the flight is going next which through commons sense, would reveal less information about the current condition of the plane and what kind of maintenance it would need and therefore what dep_delay it would have. 
+ Out of the methods that we covered in class, I found gradient boosted models to provide the best performance based on having the lowest root mean squared error on the cross validations et. I believe that this makes sense because GBMs are able to capture non linear relationships between the explanatory variables and 'dep_delay' whereas linear regression cannot. 
 
 
 ## Future Work
-
+TODo: add dep_delay vs explanatory plots. 
 TODO: remove points that are outliers ie dep_delay > 200 or 300 etc. or remove less than x number of points.
 then use k-folds cross validation on cross validation set where no points were removed. 
 can repeat k-folds for different seeds. 
@@ -150,10 +144,16 @@ have train, CV and test set
 2/3% train, 1/3%CV, wait for prof test set
 
 try lasso regression
+add more insights into generating dataset.
 
+Conclusion stuff. 
+certain planes tend to fly back and forth and that is why dest is good?
+interaction terms may be important because they are hard to predict in advance when you schedule flights which leads to delays?
+add more about shortcomings of approach. cut off too much of tail, reduce predictive power on test dataset which has tail in exchange for better performance on stuff not in tail. 
+
+maybe for stretch goal try rank stuff that prof did. 
 
 # Code
-
 
 ## Preparing the programming environment
 
@@ -314,17 +314,31 @@ train_df <- DF[train_index,]
 test_df <- DF[-train_index,]
 ```
 
+```{r}
+# pre-allocate space
+preallocate_df <- function(n){
+  df <- data.frame(model_description = character(n), rmse = numeric(n), stringsAsFactors = FALSE)
+  for(i in 1:n){
+    df$model_description[i] <- i
+    df$rmse[i] <- toString(i)
+  }
+  df
+}
+```
 
 # predicting 0
 ```{r}
+benchmark_df <- data.frame(model_description = character(), rmse = numeric(), stringsAsFactors = FALSE)
 rmse = mean((test_df$dep_delay-0)^2) %>% sqrt()
-rmse
+model_description = "predicting 0"
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_description, rmse=rmse))
 ```
 
 # predicting the mean
 ```{r}
 rmse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)%>% sqrt()
 rmse
+benchmark_df
 ```
 
 
@@ -332,6 +346,8 @@ rmse
 ```{r}
 rmse = mean((test_df$dep_delay-median(train_df$dep_delay))^2)%>% sqrt()
 rmse
+model_description <- 'predicting the median'
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_description, rmse=rmse))
 ```
 
 
@@ -362,7 +378,11 @@ lm_test_df <- lm_test_df[ !lm_test_df$dest %in% in_test_but_not_train, ]
 preds = predict(model, newdata=lm_test_df)
 rmse = sqrt(mean((lm_test_df$dep_delay - preds)^2))
 rmse
+model_description <- 'linear regression'
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_description, rmse=rmse))
 ```
+
+
 
 
 # gbm
@@ -388,6 +408,9 @@ model <- readRDS(destfile)
 
 ```
 
+```{r}
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'gbm', rmse=7.94458))
+```
 
 ```{r gbmsummary, echo=echo_flag}
 gbmsummary <- summary(model)
@@ -417,6 +440,13 @@ rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 ```
 
+
+```{r benchmarkdf, echo=echo_flag}
+knitr::kable(
+  head(benchmark_df), booktabs = TRUE,
+  caption = 'benchmark comparing all the models that we tried'
+)
+```
 
 # References
 
