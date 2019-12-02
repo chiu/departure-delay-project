@@ -400,7 +400,7 @@ saveRDS(model, filename)
 return(model)
 }
 
-destfile <- "model2.rds"
+destfile <- "models/model2.rds"
 if (!file.exists(destfile)) {
    train_gbm(destfile)
  }
@@ -430,6 +430,8 @@ The relative influence for a given variable is the average of these improvements
 model <- gbm(dep_delay ~ ., data=train_df,
               n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
 preds = predict(model, newdata=test_df, n.trees=1000)
+filename <- "models/gbm_shrinkage_0point01_ntrees_1000_v1.rds"
+saveRDS(model, filename)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
 summary(model)
@@ -438,6 +440,47 @@ summary(model)
 ```{r}
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 rmse
+```
+
+```{r}
+set.seed(42)
+
+x <- 2^seq(14,14, by=1)
+rmse_vec <- numeric(length(x))
+count <- 1
+for (val in x) {
+  hboost <- gbm(
+    dep_delay ~ .,
+    data = train_df,
+    n.trees = val,
+    distribution = 'gaussian',
+    shrinkage = 0.001
+  )
+  preds = predict(hboost, n.trees = val, newdata = test_df)
+  mse = mean((test_df$dep_delay - preds) ^ 2)
+  rmse <- sqrt(mse)
+  rmse_vec[count] <- rmse
+ 
+  print(val)
+  print(rmse)
+  filename <- paste0("performance/gbm_shrinkage_0point001_ntrees_", val)
+  filename <- paste0(filename, "_v1.rds")
+  saveRDS(model, filename)
+
+  count = count + 1
+}
+
+plot(x, rmse_vec)
+
+num_trees_vs_rmse <- as.data.frame(num_trees=x, rmse=rmse_vec)
+write.csv(num_trees_vs_rmse, 'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv')
+
+
+summary(hboost)
+class(summary(hboost))
+summary <- summary(hboost)
+
+write.csv(summary,'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
 ```
 
 
