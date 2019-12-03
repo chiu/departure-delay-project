@@ -66,8 +66,8 @@ Please see table \@ref(tab:pve) for the proportion of variance explained by each
 Please see table \@ref(tab:pcarotation) for the coefficient of each variable for each principal component ordered by magnitude of coefficient. 
 
 
-## Cross Validation 
-Initially, I used the most basic cross validation technique where I have a training dataset and a cross validation dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for cross validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  I believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
+## Validation 
+Initially, I used the most basic validation technique where I have a training dataset and a cross validation dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for cross validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  I believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
 
 
 ## Models
@@ -87,16 +87,18 @@ This suggests that there is some relationship between the dep_delay and the expl
 
 ### Generalized Boosted Regression Model (GBM)
 How boosted regression models work is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the enssemble of base classifiers trained so far.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
-  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE of 7.94458 on the cross validation set after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.
-Please see table @\ref{tab:gbmsummary} for a table of the relative influence of each explanatory variable. 
+  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE of 7.94458 on the cross validation set after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
+Please see table \@ref(tab:gbmsummary) for a table of the relative influence of each explanatory variable. 
   Here, you can see the relative influence for each variable for gbm.  
+
 For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
 The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
 
 
+
 # Results
 In regression and gbm, I found different features to be important.  
-Please see table @\ref{tab:benchmarkdf} for all the models and their root mean squared error (RMSE) on the cross validation set.
+Please see table \@ref(tab:benchmarkdf) for all the models and their root mean squared error (RMSE) on the validation set.
 
 ## GBM
 For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression. Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute. The dest column contains the airport code for where a given flight is flying to. Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence. [@uc_influence].  dest is the destination airport code. 'sched_dep_time_num_minute' is the number of minutes since the beginning of a given day for that flight.  'model' is the plane nodel. 
@@ -159,17 +161,18 @@ maybe for stretch goal try rank stuff that prof did.
 
 ```{r,echo=FALSE}
 echo_flag <- FALSE
+results_option <- 'hide'
 ```
 
 ### Loading Libraries
-```{r}
+```{r, results=results_option}
 library(tidyverse)
 ```
 
 ## Data Preprocessing
 
 ### Loading the data
-```{r}
+```{r, results=results_option}
 library(nycflights13)
 library(Hmisc)
 set.seed(42)
@@ -186,14 +189,14 @@ knitr::kable(
 
 
 turning all columns with datatype characters to factors. 
-```{r}
+```{r, results=results_option}
 DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
                                        as.factor)
 DF$flight <- as.factor(DF$flight)
 ```
 
 
-```{r}
+```{r, results=results_option}
 library(lubridate)
 DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
 DF$sched_arr_time_hour <- hour(DF$sched_arr_time_posix)
@@ -208,28 +211,28 @@ DF$sched_dep_time_minute <- minute(DF$sched_dep_time_posix)
 #num minute is number of minutes since start of day for scheduled depival time
 DF$sched_dep_time_num_minute <- 60*DF$sched_dep_time_hour + DF$sched_dep_time_minute
 ```
-```{r}
+```{r, results=results_option}
 select(original_data, time_hour, sched_dep_time, sched_arr_time, tz, tzone)
 select(DF, sched_arr_time, sched_arr_time_hour)
 ```
 
-```{r}
+```{r, results=results_option}
 DF$sched_air_time <- DF$sched_arr_time_posix - DF$sched_dep_time_posix
 drops <- c('sched_arr_time_posix', 'sched_arr_time_hour', 'sched_dep_time_posix', 'sched_dep_time_hour', 'sched_dep_time', 'sched_arr_time', 'hour', 'time', 'minute', 'time_hour' )
 DF <- DF[ , !(names(DF) %in% drops)]
 ```
 
-```{r}
+```{r, results=results_option}
 drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
 DF <- DF[ , !(names(DF) %in% drops)]
 ```
 
-```{r}
+```{r, results=results_option}
 ## Remove columns with more than 50% NA
 DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
 ```
 
-```{r}
+```{r, results=results_option}
 DF$sched_air_time <- as.numeric(DF$sched_air_time)
 library(imputeMissings)
 impute_model <- imputeMissings::compute(DF, method="median/mode")
@@ -238,18 +241,18 @@ DF <- impute(DF, object=impute_model, flag=TRUE)
 DF <- DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are identical to each other. 
 ```
 
-```{r}
+```{r, results=results_option}
 numeric_only_df <- dplyr::select_if(DF, is.numeric)
 library(corrplot)
 ```
 
-```{r corrplot, fig.cap = "My caption", echo=echo_flag}
+```{r corrplot, fig.cap = "grid depicting correlation amongst all numerical variables", echo=echo_flag}
 corrplot(cor(numeric_only_df), type = 'lower')
 ```
 
 
-## try features scaling
-```{r}
+## Feature Scaling
+```{r, results=results_option}
 dep_delay_vec <- DF$dep_delay
 DF$dep_delay <- NULL
 head(DF)
@@ -262,11 +265,11 @@ DF$dep_delay <- dep_delay_vec
 
 ## Exploratory Data Analysis
 
-```{r}
+```{r, results=results_option}
 numeric_DF <- dplyr::select_if(DF, is.numeric) %>%  scale()
 ```
 
-```{r}
+```{r, results=results_option}
 prcomp_res <- prcomp(numeric_DF)
 sdev <- prcomp_res$sdev
 sdev
@@ -274,7 +277,7 @@ sdev
 
 ### all four components at same time
 proportion of variance explained by each component
-```{r}
+```{r, results=results_option}
 pve <- colSums(prcomp_res$x^2)/sum(numeric_DF^2)
 ```
 
@@ -286,11 +289,11 @@ knitr::kable(
 ```
 
 
-```{r}
+```{r, results=results_option}
 rotation <- as.data.frame(prcomp_res$rotation)
 rotation[order(-abs(rotation$PC1)),]
 ```
-```{r}
+```{r, results=results_option}
 pca_rotation <- head(rotation[order(-abs(rotation$PC2)),])
 ```
 
@@ -302,11 +305,11 @@ knitr::kable(
 ```
 
 ### take out extreme departure delays
-```{r}
+```{r, results=results_option}
 DF<-DF[DF$dep_delay < 30,]
 ```
 
-```{r}
+```{r, results=results_option}
 set.seed(42)
 DF$flight <- NULL
 train_index <- sample(1:nrow(DF),size=2*nrow(DF)/3,replace=FALSE)
@@ -314,7 +317,7 @@ train_df <- DF[train_index,]
 test_df <- DF[-train_index,]
 ```
 
-```{r}
+```{r, results=results_option}
 # pre-allocate space
 preallocate_df <- function(n){
   df <- data.frame(model_description = character(n), rmse = numeric(n), stringsAsFactors = FALSE)
@@ -326,24 +329,24 @@ preallocate_df <- function(n){
 }
 ```
 
-# predicting 0
-```{r}
+## predicting 0
+```{r, results=results_option}
 benchmark_df <- data.frame(model_description = character(), rmse = numeric(), stringsAsFactors = FALSE)
 rmse = mean((test_df$dep_delay-0)^2) %>% sqrt()
 model_description = "predicting 0"
 benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_description, rmse=rmse))
 ```
 
-# predicting the mean
-```{r}
+## predicting the mean
+```{r, results=results_option}
 rmse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)%>% sqrt()
 rmse
 benchmark_df
 ```
 
 
-# predicting the median
-```{r}
+## predicting the median
+```{r, results=results_option}
 rmse = mean((test_df$dep_delay-median(train_df$dep_delay))^2)%>% sqrt()
 rmse
 model_description <- 'predicting the median'
@@ -351,18 +354,18 @@ benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_descrip
 ```
 
 
-# linear regression with dep
-```{r}
+## linear regression with dest
+```{r, results=results_option}
 model <- lm(dep_delay ~ ., data=train_df)
-model_without_dep <-  lm(dep_delay ~ .-dest, data=train_df)
-anova(model, model_without_dep)
+model_without_dest <-  lm(dep_delay ~ .-dest, data=train_df)
+anova(model, model_without_dest)
 summary <- round(summary(model)$coefficients,6)
 sorteddf <- summary[order(summary[,ncol(summary)]),]
 head(sorteddf)
 ```
 
 
-```{r}
+```{r, results=results_option}
 lm_test_df <- test_df
 
 in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
@@ -378,8 +381,8 @@ model_description <- 'linear regression'
 benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_description, rmse=rmse))
 ```
 
-# gbm
-```{r}
+## GBM
+```{r, results=results_option}
 library(gbm)
 
 train_gbm <- function(filename){
@@ -401,7 +404,7 @@ model <- readRDS(destfile)
 
 ```
 
-```{r}
+```{r, results=results_option}
 benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'gbm', rmse=7.94458))
 ```
 
@@ -418,10 +421,10 @@ For a gbm, the improvement in the splitting criterion (which is mean squared err
 The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
 
 
-```{r}
+```{r, results=results_option}
 model <- gbm(dep_delay ~ ., data=train_df,
               n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=1000)
+preds = predict(model, newdata=test_df, n.trees=100)
 filename <- "models/gbm_shrinkage_0point01_ntrees_100_v1.rds"
 saveRDS(model, filename)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
@@ -430,7 +433,7 @@ summary(model)
 
 
 
-```{r}
+```{r, results=results_option}
 library(gbm)
 filename <- "models/gbm_shrinkage_0point01_ntrees_100_v1.rds"
 if (!file.exists(filename)) {
@@ -451,54 +454,106 @@ rmse <- sqrt(mean((test_df$dep_delay - preds) ^ 2))
 summary(model)
 ```
 
-```{r}
+```{r, results=results_option}
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 
 ```
 
-```{r}
-set.seed(42)
-x <- 2 ^ seq(5, 14, by = 1)
-rmse_vec <- numeric(length(x))
-count <- 1
-for (val in x) {
-  filename <-
-    paste0("models/gbm_shrinkage_0point001_ntrees_", val)
-  filename <- paste0(filename, "_v1.rds")
-  if (!file.exists(filename)) {
-    hboost <- gbm(
-      dep_delay ~ .,
-      data = train_df,
-      n.trees = val,
-      distribution = 'gaussian',
-      shrinkage = 0.001
+```{r, results=results_option}
+cars %>% 
+  rename("Stopping Distance (ft)" = dist) %>% 
+  colnames()
+```
+
+```{r, results=results_option}
+shrinkage_0point01_bench <- read.csv('performance/shrinkage_0point01_numtrees_32_to_16384_gbm_benchmark.csv')
+shrinkage_0point01_bench$X <- NULL
+shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
+  dplyr::rename(
+    "shrinkage_0point01_rmse" = rmse
     )
-    saveRDS(hboost, filename)
-  } else{
-    hboost <- readRDS(filename)
+shrinkage_0point01_bench
+```
+
+```{r, results=results_option}
+shrinkage_0point001_bench <- read.csv('performance/shrinkage_0point001_numtrees_32_to_16384_gbm_benchmark_v2.csv')
+shrinkage_0point001_bench$X <- NULL
+shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
+  dplyr::rename(
+    "shrinkage_0point001_rmse" = rmse
+    )
+shrinkage_0point001_bench
+```
+
+```{r, results=results_option}
+gbm_merge_df <- merge(shrinkage_0point01_bench, shrinkage_0point001_bench)
+gbm_merge_df
+```
+```{r RMSEvsNumTrees, fig.cap = "plot of RMSE vs number of trees for shrinkage = 0.01 and shrinkage = 0.001", echo=echo_flag}
+ggplot(gbm_merge_df, aes(num_trees)) + 
+  geom_line(aes(y = shrinkage_0point01_rmse, colour = "shrinkage_0point01_rmse")) +  geom_point(aes(y = shrinkage_0point01_rmse, colour = "shrinkage_0point01_rmse")) +
+  geom_line(aes(y = shrinkage_0point001_rmse, colour = "shrinkage_0point001_rmse")) + geom_point(aes(y = shrinkage_0point001_rmse, colour = "shrinkage_0point001_rmse"))+ ggtitle("GBM: RMSE vs. Number of Trees for Different Shrinkage") +
+  xlab("Root Mean Squared Error (RMSE)") + ylab("number of trees")
+```
+
+```{r, eval=TRUE}
+library(gbm)
+train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
+  #rerun <- TRUE
+  set.seed(42)
+  x <- 2 ^ seq(5, 14, by = 1)
+  rmse_vec <- numeric(length(x))
+  count <- 1
+  filename_vec1 <- c("models/gbm_shrinkage_")
+  filename_vec1 <- append(filename_vec1, gsub('\\.', 'point', toString(shrinkage)) )
+  filename_vec1 <- append(filename_vec1, "_ntrees_")
+  filename_prefix1 <- paste(filename_vec1, collapse = '')
+  
+  
+  
+   
+  for (val in x) {
+    filename_vec2 <- append(filename_prefix1, val)
+    filename_vec2 <- append(filename_vec2, "_v2.rds")
+    filename <- paste(filename_vec2, collapse = '')
+    if (!file.exists(filename) | rerun) {
+      hboost <- gbm(
+        dep_delay ~ .,
+        data = train_df,
+        n.trees = val,
+        distribution = 'gaussian',
+        shrinkage = shrinkage
+      )
+      saveRDS(hboost, filename)
+    } else{
+      hboost <- readRDS(filename)
+    }
+    
+    preds = predict(hboost, n.trees = val, newdata = test_df)
+    mse = mean((test_df$dep_delay - preds) ^ 2)
+    rmse <- sqrt(mse)
+    rmse_vec[count] <- rmse
+    print(val)
+    print(rmse)
+    count = count + 1
   }
   
-  preds = predict(hboost, n.trees = val, newdata = test_df)
-  mse = mean((test_df$dep_delay - preds) ^ 2)
-  rmse <- sqrt(mse)
-  rmse_vec[count] <- rmse
-  print(val)
-  print(rmse)
-  count = count + 1
+  summary <- summary(hboost)
+  write.csv(summary,
+            'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
+  
+  #plot(x, rmse_vec)
+  num_trees_vs_rmse <- data.frame("num_trees" = x, "rmse" = rmse_vec)
+  write.csv(
+    num_trees_vs_rmse,
+    'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
+  )
 }
 
-summary(hboost)
-write.csv(summary,
-          'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
-
-plot(x, rmse_vec)
-num_trees_vs_rmse <- data.frame("num_trees" = x, "rmse" = rmse_vec)
-write.csv(
-  num_trees_vs_rmse,
-  'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
-)
-
+train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun=TRUE)
+train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun=TRUE)
 ```
+
 
 
 ```{r benchmarkdf, echo=echo_flag}
