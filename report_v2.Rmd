@@ -504,53 +504,56 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   x <- 2 ^ seq(5, 14, by = 1)
   rmse_vec <- numeric(length(x))
   count <- 1
-  filename_vec1 <- c("models/gbm_shrinkage_")
-  filename_vec1 <- append(filename_vec1, gsub('\\.', 'point', toString(shrinkage)) )
+  filename_vec1 <- c("models2/gbm_shrinkage_")
+  filename_vec1 <-
+    append(filename_vec1, gsub('\\.', 'point', toString(shrinkage)))
   filename_vec1 <- append(filename_vec1, "_ntrees_")
   filename_prefix1 <- paste(filename_vec1, collapse = '')
   
   
   
-   
+  
   for (val in x) {
-    filename_vec2 <- append(filename_prefix1, val)
+     filename_vec2 <- append(filename_prefix1, val)
     filename_vec2 <- append(filename_vec2, "_v2.rds")
     filename <- paste(filename_vec2, collapse = '')
-    if (!file.exists(filename) | rerun) {
-      hboost <- gbm(
-        dep_delay ~ .,
-        data = train_df,
-        n.trees = val,
-        distribution = 'gaussian',
-        shrinkage = shrinkage
-      )
-      saveRDS(hboost, filename)
-    } else{
-      hboost <- readRDS(filename)
-    }
-    
-    preds = predict(hboost, n.trees = val, newdata = test_df)
-    mse = mean((test_df$dep_delay - preds) ^ 2)
-    rmse <- sqrt(mse)
-    rmse_vec[count] <- rmse
-    print(val)
-    print(rmse)
-    count = count + 1
+    if (!file.exists(filename)) {
+   
+    hboost <- gbm(
+      dep_delay ~ .,
+      data = train_df,
+      n.trees = val,
+      shrinkage = shrinkage
+    ) # default shrinkage = 0.1
+    saveRDS(hboost, filename)
+  } else {
+    print("reading saved model")
+    hboost <- readRDS(filename)
   }
   
-  summary <- summary(hboost)
-  write.csv(summary,
-            'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
-  
-  #plot(x, rmse_vec)
-  num_trees_vs_rmse <- data.frame("num_trees" = x, "rmse" = rmse_vec)
-  write.csv(
-    num_trees_vs_rmse,
-    'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
-  )
+  preds = predict(hboost, n.trees = val, newdata = test_df)
+  mse = mean((test_df$dep_delay - preds) ^ 2)
+  rmse <- sqrt(mse)
+  rmse_vec[count] <- rmse
+  print(val)
+  print(rmse)
+  count = count + 1
 }
 
-train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun=TRUE)
+summary <- summary(hboost)
+write.csv(summary,
+          'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
+
+#plot(x, rmse_vec)
+num_trees_vs_rmse <-
+  data.frame("num_trees" = x, "rmse" = rmse_vec)
+write.csv(
+  num_trees_vs_rmse,
+  'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
+)
+}
+
+train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = TRUE)
 train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun=TRUE)
 ```
 
