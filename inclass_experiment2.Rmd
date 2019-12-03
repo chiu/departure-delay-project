@@ -88,4 +88,86 @@ replace observations with normal score qqnorm(dep_delay)
 
 
 
+#map extreme values to something else; map to quantile.  
+can map to center normal. 
+replace values by ranks. 
+map value to percentile of distribution
+
+dividing rank/(n+1) is called empirical quantiles.
+
+source code is online
+
+tail num can have random effects model. 
+
+mutate precipitation to 0.
+
+use lubridate for dates
+
+do interaction effects?
+
+is it possible to tell anything about statistical significance from a point?
+
+
+linear effects will not be good.
+
+splines might be better.
+
+
+put together smooths, use gam.  
+
+try gamboost. 
+
+looks like non linear effects in gams.
+
+will release holdout test set on dec 4.
+
+
+test set is cross validation set.
+
+
+p values may be overestimated because dataset is so large that even explaining a small portion of data is statistically significant.
+
+splines
+
+
+non parametric effect is everything but the linear effect
+
+parametric effect is the linear effect
+
+
+
+also use gbm. gbm is good
+shouldn't use xgboost.   but we can.
+
+
+anova table from gam was not good at summarzing
+
+relative influence for gbm is good at prioritizing.
+
+
+how did your error from tehse models compaer to predicting the mean?
+
+
+reduced mean square error from predicting mean by 13% by using gbm
+
+only 15% better.
+
+
+prediction as poor performance
+but inference is pretty good, some airlines are better than others, summer is busier, time of day, earlier has less delays
+
+some airlines are better than others and time of day matters
+
+
+
+
+
+should we describe the data preprocessing as part of method?
+should we go in depth into our data cleaning process in our report?
+
+how does boosting capture non linear effects?
+it is like piecewise fitting
+
+danger of overfitting to cross validation set? no it is valid method.
+first time applying cross validaiton is valid estimation of test error. 
 
