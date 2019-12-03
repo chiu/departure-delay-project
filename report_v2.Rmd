@@ -363,10 +363,6 @@ head(sorteddf)
 
 
 ```{r}
-head(sorteddf)
-```
-
-```{r}
 lm_test_df <- test_df
 
 in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
@@ -381,9 +377,6 @@ rmse
 model_description <- 'linear regression'
 benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_description, rmse=rmse))
 ```
-
-
-
 
 # gbm
 ```{r}
@@ -425,62 +418,86 @@ For a gbm, the improvement in the splitting criterion (which is mean squared err
 The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
 
 
-
 ```{r}
 model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=1000, shrinkage=0.01) # default shrinkage = 0.1
+              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
 preds = predict(model, newdata=test_df, n.trees=1000)
-filename <- "models/gbm_shrinkage_0point01_ntrees_1000_v1.rds"
+filename <- "models/gbm_shrinkage_0point01_ntrees_100_v1.rds"
 saveRDS(model, filename)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-rmse
+summary(model)
+```
+
+
+
+```{r}
+library(gbm)
+filename <- "models/gbm_shrinkage_0point01_ntrees_100_v1.rds"
+if (!file.exists(filename)) {
+  model <- gbm(
+    dep_delay ~ .,
+    data = train_df,
+    n.trees = 100,
+    shrinkage = 0.01
+  ) # default shrinkage = 0.1
+  saveRDS(model, filename)
+} else {
+  print("reading saved model")
+  model <- readRDS(filename)
+}
+preds <- predict(model, newdata = test_df, n.trees = 100)
+rmse <- sqrt(mean((test_df$dep_delay - preds) ^ 2))
+
 summary(model)
 ```
 
 ```{r}
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-rmse
+
 ```
 
 ```{r}
 set.seed(42)
-
-x <- 2^seq(14,14, by=1)
+x <- 2 ^ seq(5, 14, by = 1)
 rmse_vec <- numeric(length(x))
 count <- 1
 for (val in x) {
-  hboost <- gbm(
-    dep_delay ~ .,
-    data = train_df,
-    n.trees = val,
-    distribution = 'gaussian',
-    shrinkage = 0.001
-  )
+  filename <-
+    paste0("models/gbm_shrinkage_0point001_ntrees_", val)
+  filename <- paste0(filename, "_v1.rds")
+  if (!file.exists(filename)) {
+    hboost <- gbm(
+      dep_delay ~ .,
+      data = train_df,
+      n.trees = val,
+      distribution = 'gaussian',
+      shrinkage = 0.001
+    )
+    saveRDS(hboost, filename)
+  } else{
+    hboost <- readRDS(filename)
+  }
+  
   preds = predict(hboost, n.trees = val, newdata = test_df)
   mse = mean((test_df$dep_delay - preds) ^ 2)
   rmse <- sqrt(mse)
   rmse_vec[count] <- rmse
- 
   print(val)
   print(rmse)
-  filename <- paste0("performance/gbm_shrinkage_0point001_ntrees_", val)
-  filename <- paste0(filename, "_v1.rds")
-  saveRDS(model, filename)
-
   count = count + 1
 }
 
-plot(x, rmse_vec)
-
-num_trees_vs_rmse <- as.data.frame(num_trees=x, rmse=rmse_vec)
-write.csv(num_trees_vs_rmse, 'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv')
-
-
 summary(hboost)
-class(summary(hboost))
-summary <- summary(hboost)
+write.csv(summary,
+          'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
 
-write.csv(summary,'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
+plot(x, rmse_vec)
+num_trees_vs_rmse <- data.frame("num_trees" = x, "rmse" = rmse_vec)
+write.csv(
+  num_trees_vs_rmse,
+  'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
+)
+
 ```
 
 
