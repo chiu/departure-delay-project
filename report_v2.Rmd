@@ -15,7 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 # Introduction
-The goal of this project is to predict the response variable, departure delays for a particular flight given the explanatory variables. 
+The goal of this project is to predict the response variable, departure delays for a particular flight given the explanatory variables.  
+* Please note that you can click on figure and table numbers to jump to that figure or table. 
 
 
 # Data
@@ -76,18 +77,18 @@ We first explored some basic models to establish a baseline performance and comp
 ### Basic Models
 dep_delay is the number of minutes that the plane either departs early or late.  Negative numbers are for early departures and positive numbers are for the number of minutes the plane is late.
 First, I used a basic model of simply predicting the dep_delay to always be 0. This was done to establish baseline performance.  
-This model had an root mean squared error (RMSE) of 8.30571. TODO
-The model in which I predicted the mean for all the predictions had an RMSE of    TODO. 
+This model had an root mean squared error (RMSE) of 8.30571.
+The model in which I predicted the mean for all the predictions had an RMSE of 8.46926.
 
 ### Linear Regression
 A linear regression model assumes a linear relationship between the explanatory variables and the response variable.  The model minimizes the squared loss function.  This minimization process generates coefficients which are used for a linear combintation of the explanatory variables.  The linear combination is the prediction. 
 Then I tried linear regression with dep_delay as the response variables and all the other remaining variables as the explanatory variables.
-This model was better than predicting the mean with an RMSE of TODO. 
+This model was better than predicting the mean with an RMSE of 7.98999. 
 This suggests that there is some relationship between the dep_delay and the explanatory variables. 
 
 ### Generalized Boosted Regression Model (GBM)
 How boosted regression models work is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the enssemble of base classifiers trained so far.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
-  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE of 7.94458 on the cross validation set after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
+  Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model had the lowest RMSE of 7.91635 on the cross validation set after it was tuned to have a shrinkage of 0.01 and around 16,000 trees.  Shrinkage is proportional to the learning rate. 16,000 trees is the number of trees used in the model.  Each iteration uses 1 tree, so 16,000 trees also refers to the number of iterations. According to the vignette, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
 Please see table \@ref(tab:gbmsummary) for a table of the relative influence of each explanatory variable. 
   Here, you can see the relative influence for each variable for gbm.  
 
@@ -95,11 +96,22 @@ For a gbm, the improvement in the splitting criterion (which is mean squared err
 The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
 
 
-
 # Results
 In regression and gbm, I found different features to be important.  
-Please see table \@ref(tab:benchmarkdf) for all the models and their root mean squared error (RMSE) on the validation set.
+Please see the table below for all the models and their root mean squared error (RMSE) on the validation set.
 
+```{r, echo=FALSE, results='hide'}
+library(tidyverse)
+benchmark_read_df <- read_csv('performance/benchmark_df.csv')
+options("digits" = 6)
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+  head(benchmark_read_df), booktabs = TRUE,
+  caption = 'benchmark comparing all the models that we tried'
+)
+```
 ## GBM
 For the best gbm model, dest which refers to which airport a given plane was flying to was the most important feature. However, the one hot encoding versions of carrier were the most important features for regression. Based on the relative influence scores provided by the gbm, some of the most important feature variables include dest, model, and sched_dep_time_num_minute. The dest column contains the airport code for where a given flight is flying to. Based on my run of gbm with a shrinkage of 0.01 and 16834 trees, dest was the most important feature with 49.56 relative influence. [@uc_influence].  dest is the destination airport code. 'sched_dep_time_num_minute' is the number of minutes since the beginning of a given day for that flight.  'model' is the plane nodel. 
 
@@ -404,9 +416,6 @@ model <- readRDS(destfile)
 
 ```
 
-```{r, results=results_option}
-benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'gbm', rmse=7.94458))
-```
 
 ```{r gbmsummary, echo=echo_flag}
 gbmsummary <- summary(model)
@@ -496,7 +505,24 @@ ggplot(gbm_merge_df, aes(num_trees)) +
   xlab("Root Mean Squared Error (RMSE)") + ylab("number of trees")
 ```
 
-```{r, eval=TRUE}
+```{r}
+gbm_merge_df
+```
+
+```{r, results=results_option}
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.916347))
+write_csv(benchmark_df, 'performance/benchmark_df.csv')
+```
+
+
+```{r benchmarkdf, echo=echo_flag}
+knitr::kable(
+  head(benchmark_df), booktabs = TRUE,
+  caption = 'benchmark comparing all the models that we tried'
+)
+```
+
+```{r, eval=FALSE}
 library(gbm)
 train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   #rerun <- TRUE
@@ -510,61 +536,53 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   filename_vec1 <- append(filename_vec1, "_ntrees_")
   filename_prefix1 <- paste(filename_vec1, collapse = '')
   
-  
-  
-  
   for (val in x) {
-     filename_vec2 <- append(filename_prefix1, val)
+    filename_vec2 <- append(filename_prefix1, val)
     filename_vec2 <- append(filename_vec2, "_v2.rds")
     filename <- paste(filename_vec2, collapse = '')
     if (!file.exists(filename)) {
-   
-    hboost <- gbm(
-      dep_delay ~ .,
-      data = train_df,
-      n.trees = val,
-      shrinkage = shrinkage
-    ) # default shrinkage = 0.1
-    saveRDS(hboost, filename)
-  } else {
-    print("reading saved model")
-    hboost <- readRDS(filename)
+      hboost <- gbm(
+        dep_delay ~ .,
+        data = train_df,
+        n.trees = val,
+        shrinkage = shrinkage
+      ) # default shrinkage = 0.1
+      saveRDS(hboost, filename)
+      hboost <- readRDS(filename)
+    } else {
+      print("reading saved model")
+      hboost <- readRDS(filename)
+    }
+    
+    preds = predict(hboost, n.trees = val, newdata = test_df)
+    mse = mean((test_df$dep_delay - preds) ^ 2)
+    rmse <- sqrt(mse)
+    rmse_vec[count] <- rmse
+    print(val)
+    print(rmse)
+    count = count + 1
   }
   
-  preds = predict(hboost, n.trees = val, newdata = test_df)
-  mse = mean((test_df$dep_delay - preds) ^ 2)
-  rmse <- sqrt(mse)
-  rmse_vec[count] <- rmse
-  print(val)
-  print(rmse)
-  count = count + 1
-}
-
-summary <- summary(hboost)
-write.csv(summary,
-          'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
-
-#plot(x, rmse_vec)
-num_trees_vs_rmse <-
-  data.frame("num_trees" = x, "rmse" = rmse_vec)
-write.csv(
-  num_trees_vs_rmse,
-  'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
-)
+  summary <- summary(hboost)
+  write.csv(summary,
+            'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
+  
+  #plot(x, rmse_vec)
+  num_trees_vs_rmse <-
+    data.frame("num_trees" = x, "rmse" = rmse_vec)
+  write.csv(
+    num_trees_vs_rmse,
+    'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
+  )
 }
 
 train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = TRUE)
-train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun=TRUE)
+train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = TRUE)
 ```
 
 
 
-```{r benchmarkdf, echo=echo_flag}
-knitr::kable(
-  head(benchmark_df), booktabs = TRUE,
-  caption = 'benchmark comparing all the models that we tried'
-)
-```
+
 
 # References
 
