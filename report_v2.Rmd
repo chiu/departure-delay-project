@@ -68,7 +68,7 @@ Please see table \@ref(tab:pcarotation) for the coefficient of each variable for
 
 
 ## Validation 
-Initially, I used the most basic validation technique where I have a training dataset and a cross validation dataset. I split the original data into a ratio of 2/3 train and 1/3 of the data for cross validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  I believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
+Initially, I used the most basic validation technique where we have a training dataset and a cross validation dataset. We split the original data into a ratio of 2/3 train and 1/3 of the data for validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  We believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
 
 
 ## Models
@@ -76,7 +76,7 @@ We first explored some basic models to establish a baseline performance and comp
 
 ### Basic Models
 dep_delay is the number of minutes that the plane either departs early or late.  Negative numbers are for early departures and positive numbers are for the number of minutes the plane is late.
-First, I used a basic model of simply predicting the dep_delay to always be 0. This was done to establish baseline performance.  
+First, we used a basic model of simply predicting the dep_delay to always be 0. This was done to establish baseline performance.  
 This model had an root mean squared error (RMSE) of 8.30571.
 The model in which I predicted the mean for all the predictions had an RMSE of 8.46926.
 
@@ -306,7 +306,7 @@ rotation <- as.data.frame(prcomp_res$rotation)
 rotation[order(-abs(rotation$PC1)),]
 ```
 ```{r, results=results_option}
-pca_rotation <- head(rotation[order(-abs(rotation$PC2)),])
+pca_rotation <- head(rotation[order(-abs(rotation$PC1)),])
 ```
 
 ```{r pcarotation, echo=echo_flag}
@@ -468,14 +468,9 @@ rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 
 ```
 
-```{r, results=results_option}
-cars %>% 
-  rename("Stopping Distance (ft)" = dist) %>% 
-  colnames()
-```
 
 ```{r, results=results_option}
-shrinkage_0point01_bench <- read.csv('performance/shrinkage_0point01_numtrees_32_to_16384_gbm_benchmark.csv')
+shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_ntrees_32768_v2_rmse_vs_num_trees.csv')
 shrinkage_0point01_bench$X <- NULL
 shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
   dplyr::rename(
@@ -485,7 +480,7 @@ shrinkage_0point01_bench
 ```
 
 ```{r, results=results_option}
-shrinkage_0point001_bench <- read.csv('performance/shrinkage_0point001_numtrees_32_to_16384_gbm_benchmark_v2.csv')
+shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_ntrees_32768_v2_rmse_vs_num_trees.csv')
 shrinkage_0point001_bench$X <- NULL
 shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
   dplyr::rename(
@@ -510,7 +505,7 @@ gbm_merge_df
 ```
 
 ```{r, results=results_option}
-benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.916347))
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.89071))
 write_csv(benchmark_df, 'performance/benchmark_df.csv')
 ```
 
@@ -527,7 +522,7 @@ library(gbm)
 train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   #rerun <- TRUE
   set.seed(42)
-  x <- 2 ^ seq(5, 14, by = 1)
+  x <- 2 ^ seq(5, 15, by = 1)
   rmse_vec <- numeric(length(x))
   count <- 1
   filename_vec1 <- c("models2/gbm_shrinkage_")
@@ -540,7 +535,7 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
     filename_vec2 <- append(filename_prefix1, val)
     filename_vec2 <- append(filename_vec2, "_v2.rds")
     filename <- paste(filename_vec2, collapse = '')
-    if (!file.exists(filename)) {
+    if (!file.exists(filename) | rerun) {
       hboost <- gbm(
         dep_delay ~ .,
         data = train_df,
@@ -563,21 +558,35 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
     count = count + 1
   }
   
+  filename_vec1 <- c("performance2/gbm_shrinkage_")
+  filename_vec1 <-
+    append(filename_vec1, gsub('\\.', 'point', toString(shrinkage)))
+  filename_vec1 <- append(filename_vec1, "_ntrees_")
+  filename_prefix1 <- paste(filename_vec1, collapse = '')
+  filename_vec2 <- append(filename_prefix1, x[length(x)])
+  
+  #summary filename
+  filename_vec_summary <- append(filename_vec2, "_v2_summary.csv")
+  filename_summary <- paste(filename_vec_summary, collapse = '')
+  
+  #rmse_vs_num_trees filename
+  filename_vec_rmse_vs_num_trees <- append(filename_vec2, "_v2_rmse_vs_num_trees.csv")
+  filename_rmse_vs_num_trees <- paste(filename_vec_rmse_vs_num_trees, collapse = '')
+  
+  
   summary <- summary(hboost)
-  write.csv(summary,
-            'performance/gbm_shrinkage_0point001_16384trees_summary_v1.csv')
+  write.csv(summary, filename_summary)
   
   #plot(x, rmse_vec)
   num_trees_vs_rmse <-
     data.frame("num_trees" = x, "rmse" = rmse_vec)
   write.csv(
-    num_trees_vs_rmse,
-    'performance/gbm_shrinkage_0point001_num_trees_vs_rmse_v1.csv'
+    num_trees_vs_rmse, filename_rmse_vs_num_trees
   )
 }
 
-train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = TRUE)
-train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = TRUE)
+train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = FALSE)
+train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = FALSE)
 ```
 
 
