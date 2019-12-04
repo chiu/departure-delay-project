@@ -68,7 +68,7 @@ Please see table \@ref(tab:pcarotation) for the coefficient of each variable for
 
 
 ## Validation 
-Initially, we used the most basic validation technique where we have a training dataset and a cross validation dataset. We split the original data into a ratio of 2/3 train and 1/3 of the data for validation.  There is a additional data which would be provided by the professor at a later date which we will use as the holdout test set.  We believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
+Initially, we used the most basic validation technique where we have a training dataset and a cross validation dataset. We split the original data into a ratio of 2/3 train and 1/3 of the data for validation.  There is an additional data which would be provided by the professor at a later date which we will use as the holdout test set.  We believe that 2/3 of the data gives enough data for the models to train on while 1/3 is enough data for us to get an accurate assessment of the error. k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
 
 
 ## Models
