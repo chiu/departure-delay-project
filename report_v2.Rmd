@@ -100,7 +100,7 @@ The relative influence for a given variable is the average of these improvements
 In regression and gbm, I found different features to be important.  
 Please see the table below for all the models and their root mean squared error (RMSE) on the validation set.
 
-```{r, echo=FALSE, results='hide'}
+```{r, include=FALSE}
 library(tidyverse)
 benchmark_read_df <- read_csv('performance/benchmark_df.csv')
 options("digits" = 6)
@@ -522,7 +522,7 @@ knitr::kable(
 )
 ```
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 library(gbm)
 train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   #rerun <- TRUE
@@ -581,6 +581,9 @@ train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = TRUE)
 ```
 
 
+```{r}
+print("done")
+```
 
 
 
