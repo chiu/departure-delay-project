@@ -93,6 +93,7 @@ This suggests that there is some relationship between the ‘dep_delay’ and th
 How boosted regression models work is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the ensemble of base classifiers trained so far.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
 
 #### Tuning
+
  	Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model with our best tuned hyperparameters had the lowest RMSE of 7.91635 on the validation set after it was tuned to have a shrinkage of 0.01 and 8,192 trees.  Shrinkage is proportional to the learning rate. 8,192 is the number of trees used in the model.  Each iteration uses 1 tree, so 8,192 trees also refers to the number of iterations. According to the vignette provided by the ‘GBM’ package, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
 
 #### Influence
@@ -386,17 +387,18 @@ benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_descrip
 library(gbm)
 
 train_gbm <- function(filename){
+num_trees <- 2^13
 set.seed(42)
 model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=100, shrinkage=0.1) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=100)
+              n.trees=num_trees, shrinkage=0.01) # default shrinkage = 0.1
+preds = predict(model, newdata=test_df, n.trees=num_trees)
 rmse = sqrt(mean((test_df$dep_delay - preds)^2))
 summary(model)
 saveRDS(model, filename)
 return(model)
 }
 
-destfile <- "models/model2.rds"
+destfile <- "models2/gbm_shrinkage_0point01_ntrees_8192_v2.rds"
 if (!file.exists(destfile)) {
    train_gbm(destfile)
  }
@@ -405,7 +407,7 @@ model <- readRDS(destfile)
 ```
 
 
-```{r gbmsummary, echo=echo_flag}
+```{r GBMsummary, echo=echo_flag}
 gbmsummary <- summary(model)
 knitr::kable(
   head(gbmsummary), booktabs = TRUE,
@@ -413,99 +415,9 @@ knitr::kable(
 )
 ```
 
-Here, you can see the relative influence for each variable for gbm.  
-For a gbm, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
-The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
 
-
-```{r, results=results_option}
-model <- gbm(dep_delay ~ ., data=train_df,
-              n.trees=100, shrinkage=0.01) # default shrinkage = 0.1
-preds = predict(model, newdata=test_df, n.trees=100)
-filename <- "models/gbm_shrinkage_0point01_ntrees_100_v1.rds"
-saveRDS(model, filename)
-rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-summary(model)
-```
-
-
-
-```{r, results=results_option}
-library(gbm)
-filename <- "models/gbm_shrinkage_0point01_ntrees_100_v1.rds"
-if (!file.exists(filename)) {
-  model <- gbm(
-    dep_delay ~ .,
-    data = train_df,
-    n.trees = 100,
-    shrinkage = 0.01
-  ) # default shrinkage = 0.1
-  saveRDS(model, filename)
-} else {
-  print("reading saved model")
-  model <- readRDS(filename)
-}
-preds <- predict(model, newdata = test_df, n.trees = 100)
-rmse <- sqrt(mean((test_df$dep_delay - preds) ^ 2))
-
-summary(model)
-```
-
-```{r, results=results_option}
-rmse = sqrt(mean((test_df$dep_delay - preds)^2))
-
-```
-
-
-```{r, results=results_option}
-shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_ntrees_32768_v2_rmse_vs_num_trees.csv')
-shrinkage_0point01_bench$X <- NULL
-shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
-  dplyr::rename(
-    "shrinkage_0point01_rmse" = rmse
-    )
-shrinkage_0point01_bench
-```
-
-```{r, results=results_option}
-shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_ntrees_32768_v2_rmse_vs_num_trees.csv')
-shrinkage_0point001_bench$X <- NULL
-shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
-  dplyr::rename(
-    "shrinkage_0point001_rmse" = rmse
-    )
-shrinkage_0point001_bench
-```
-
-```{r, results=results_option}
-gbm_merge_df <- merge(shrinkage_0point01_bench, shrinkage_0point001_bench)
-gbm_merge_df
-```
-```{r RMSEvsNumTrees, fig.cap = "plot of RMSE vs number of trees for shrinkage = 0.01 and shrinkage = 0.001", echo=echo_flag}
-ggplot(gbm_merge_df, aes(num_trees)) + 
-  geom_line(aes(y = shrinkage_0point01_rmse, colour = "shrinkage_0point01_rmse")) +  geom_point(aes(y = shrinkage_0point01_rmse, colour = "shrinkage_0point01_rmse")) +
-  geom_line(aes(y = shrinkage_0point001_rmse, colour = "shrinkage_0point001_rmse")) + geom_point(aes(y = shrinkage_0point001_rmse, colour = "shrinkage_0point001_rmse"))+ ggtitle("GBM: RMSE vs. Number of Trees for Different Shrinkage") +
-  xlab("Root Mean Squared Error (RMSE)") + ylab("number of trees")
-```
-
-```{r}
-gbm_merge_df
-```
-
-```{r, results=results_option}
-benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.89071))
-write_csv(benchmark_df, 'performance/benchmark_df.csv')
-```
-
-
-```{r benchmarkdf, echo=echo_flag}
-knitr::kable(
-  head(benchmark_df), booktabs = TRUE,
-  caption = 'benchmark comparing all the models that we tried'
-)
-```
-
-```{r, eval=TRUE}
+Chunk below takes 2+ hours to run on an average laptop. 
+```{r, eval=FALSE}
 library(gbm)
 train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   #rerun <- TRUE
@@ -561,11 +473,9 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   filename_vec_rmse_vs_num_trees <- append(filename_vec2, "_v2_rmse_vs_num_trees.csv")
   filename_rmse_vs_num_trees <- paste(filename_vec_rmse_vs_num_trees, collapse = '')
   
-  
   summary <- summary(hboost)
   write.csv(summary, filename_summary)
   
-  #plot(x, rmse_vec)
   num_trees_vs_rmse <-
     data.frame("num_trees" = x, "rmse" = rmse_vec)
   write.csv(
@@ -577,6 +487,51 @@ train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = FALSE)
 train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = FALSE)
 ```
 
+
+```{r, results=results_option}
+shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_ntrees_32768_v2_rmse_vs_num_trees.csv')
+shrinkage_0point01_bench$X <- NULL
+shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
+  dplyr::rename(
+    "shrinkage_0point01_rmse" = rmse
+    )
+shrinkage_0point01_bench
+```
+
+```{r, results=results_option}
+shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_ntrees_32768_v2_rmse_vs_num_trees.csv')
+shrinkage_0point001_bench$X <- NULL
+shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
+  dplyr::rename(
+    "shrinkage_0point001_rmse" = rmse
+    )
+shrinkage_0point001_bench
+```
+
+```{r, results=results_option}
+gbm_merge_df <- merge(shrinkage_0point01_bench, shrinkage_0point001_bench)
+gbm_merge_df
+```
+```{r RMSEvsNumTrees, fig.cap = "plot of RMSE vs number of trees for shrinkage = 0.01 and shrinkage = 0.001", echo=echo_flag}
+ggplot(gbm_merge_df, aes(num_trees)) + 
+  geom_line(aes(y = shrinkage_0point01_rmse, colour = "shrinkage_0point01_rmse")) +  geom_point(aes(y = shrinkage_0point01_rmse, colour = "shrinkage_0point01_rmse")) +
+  geom_line(aes(y = shrinkage_0point001_rmse, colour = "shrinkage_0point001_rmse")) + geom_point(aes(y = shrinkage_0point001_rmse, colour = "shrinkage_0point001_rmse"))+ ggtitle("GBM: RMSE vs. Number of Trees for Different Shrinkage") +
+  xlab("Root Mean Squared Error (RMSE)") + ylab("number of trees")
+```
+
+
+```{r, results=results_option}
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.89071))
+write_csv(benchmark_df, 'performance/benchmark_df.csv')
+```
+
+
+```{r benchmarkdf, echo=echo_flag}
+knitr::kable(
+  head(benchmark_df), booktabs = TRUE,
+  caption = 'benchmark comparing all the models that we tried'
+)
+```
 
 ```{r}
 print("done")
