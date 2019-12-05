@@ -409,12 +409,12 @@ knitr::kable(
 
 
 Chunk below takes 2+ hours to run on an average laptop. 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 library(gbm)
 train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   #rerun <- TRUE
   set.seed(42)
-  x <- 2 ^ seq(5, 15, by = 1)
+  x <- 2 ^ seq(5, 18, by = 1)
   rmse_vec <- numeric(length(x))
   count <- 1
   filename_vec1 <- c("models2/gbm_shrinkage_")
@@ -481,7 +481,7 @@ train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = FALSE)
 
 
 ```{r, results=results_option}
-shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_ntrees_32768_v2_rmse_vs_num_trees.csv')
+shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_ntrees_65536_v2_rmse_vs_num_trees.csv')
 shrinkage_0point01_bench$X <- NULL
 shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
   dplyr::rename(
@@ -491,7 +491,7 @@ shrinkage_0point01_bench
 ```
 
 ```{r, results=results_option}
-shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_ntrees_32768_v2_rmse_vs_num_trees.csv')
+shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_ntrees_65536_v2_rmse_vs_num_trees.csv')
 shrinkage_0point001_bench$X <- NULL
 shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
   dplyr::rename(
