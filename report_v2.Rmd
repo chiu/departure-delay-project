@@ -93,8 +93,7 @@ This suggests that there is some relationship between the ‘dep_delay’ and th
 How boosted regression models work is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the ensemble of base classifiers trained so far.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
 
 #### Tuning
-
- 	Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model with our best tuned hyperparameters had the lowest RMSE of 7.91635 on the validation set after it was tuned to have a shrinkage of 0.01 and 8,192 trees.  Shrinkage is proportional to the learning rate. 8,192 is the number of trees used in the model.  Each iteration uses 1 tree, so 8,192 trees also refers to the number of iterations. According to the vignette provided by the ‘GBM’ package, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
+Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model with our best tuned hyperparameters had the lowest RMSE of 7.91635 on the validation set after it was tuned to have a shrinkage of 0.01 and 8,192 trees.  Shrinkage is proportional to the learning rate. 8,192 is the number of trees used in the model.  Each iteration uses 1 tree, so 8,192 trees also refers to the number of iterations. According to the vignette provided by the ‘GBM’ package, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
 
 #### Influence
 Please see table \@ref(tab:GBMsummary) for a table of the relative influence of each explanatory variable.   Here, you can see the relative influence for each variable for GBM.  
@@ -316,17 +315,11 @@ train_df <- DF[train_index,]
 test_df <- DF[-train_index,]
 ```
 
-```{r, results=results_option}
-# pre-allocate space
-preallocate_df <- function(n){
-  df <- data.frame(model_description = character(n), rmse = numeric(n), stringsAsFactors = FALSE)
-  for(i in 1:n){
-    df$model_description[i] <- i
-    df$rmse[i] <- toString(i)
-  }
-  df
-}
+save entire dataset for later
+```{r}
+train_and_validation_df <- DF
 ```
+
 
 ## predicting 0
 ```{r, results=results_option}
@@ -529,9 +522,35 @@ write_csv(benchmark_df, 'performance/benchmark_df.csv')
 ```{r benchmarkdf, echo=echo_flag}
 knitr::kable(
   head(benchmark_df), booktabs = TRUE,
-  caption = 'benchmark comparing all the models that we tried'
+  caption = 'RMSE on the validation set, benchmark comparing all the models that we tried'
 )
 ```
+
+
+Final training on entire dataset to prepare for test set. 
+```{r, results=results_option}
+library(gbm)
+
+train_final_gbm <- function(filename){
+num_trees <- 2^13
+set.seed(42)
+model <- gbm(dep_delay ~ ., data=train_and_validation_df,
+              n.trees=num_trees, shrinkage=0.01) # default shrinkage = 0.1
+saveRDS(model, filename)
+return(model)
+}
+
+destfile <- "models_ultimate/final_train_on_train_and_validation_gbm_v1.rds"
+if (!file.exists(destfile)) {
+   train_final_gbm(destfile)
+}
+
+final_model <- readRDS(destfile)
+final_preds = predict(final_model, newdata=train_and_validation_df, n.trees=num_trees)
+final_rmse = sqrt(mean((train_and_validation_df$dep_delay - final_preds)^2))
+summary(final_model)
+```
+
 
 ```{r}
 print("done")
