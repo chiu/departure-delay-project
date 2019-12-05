@@ -411,10 +411,10 @@ knitr::kable(
 Chunk below takes 2+ hours to run on an average laptop. 
 ```{r, eval=TRUE}
 library(gbm)
-train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
+train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun, num_trees_2_exp=16) {
   #rerun <- TRUE
   set.seed(42)
-  x <- 2 ^ seq(5, 18, by = 1)
+  x <- 2 ^ seq(5, num_trees_2_exp, by = 1)
   rmse_vec <- numeric(length(x))
   count <- 1
   filename_vec1 <- c("models2/gbm_shrinkage_")
@@ -453,16 +453,16 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   filename_vec1 <- c("performance2/gbm_shrinkage_")
   filename_vec1 <-
     append(filename_vec1, gsub('\\.', 'point', toString(shrinkage)))
-  filename_vec1 <- append(filename_vec1, "_ntrees_")
-  filename_prefix1 <- paste(filename_vec1, collapse = '')
-  filename_vec2 <- append(filename_prefix1, x[length(x)])
+  #filename_vec1 <- append(filename_vec1, "_ntrees_")
+  #filename_prefix1 <- paste(filename_vec1, collapse = '')
+  #filename_vec2 <- append(filename_prefix1, x[length(x)])
   
   #summary filename
-  filename_vec_summary <- append(filename_vec2, "_v2_summary.csv")
+  filename_vec_summary <- append(filename_vec1, "_v2_summary.csv")
   filename_summary <- paste(filename_vec_summary, collapse = '')
   
   #rmse_vs_num_trees filename
-  filename_vec_rmse_vs_num_trees <- append(filename_vec2, "_v2_rmse_vs_num_trees.csv")
+  filename_vec_rmse_vs_num_trees <- append(filename_vec1, "_v2_rmse_vs_num_trees.csv")
   filename_rmse_vs_num_trees <- paste(filename_vec_rmse_vs_num_trees, collapse = '')
   
   summary <- summary(hboost)
@@ -475,13 +475,13 @@ train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun) {
   )
 }
 
-train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = FALSE)
-train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = FALSE)
+train_gbm_rmse_vs_num_trees(shrinkage = 0.01, rerun = FALSE, num_trees_2_exp=17)
+train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = FALSE, num_trees_2_exp=17)
 ```
 
 
 ```{r, results=results_option}
-shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_ntrees_65536_v2_rmse_vs_num_trees.csv')
+shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_v2_rmse_vs_num_trees.csv')
 shrinkage_0point01_bench$X <- NULL
 shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
   dplyr::rename(
@@ -491,7 +491,7 @@ shrinkage_0point01_bench
 ```
 
 ```{r, results=results_option}
-shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_ntrees_65536_v2_rmse_vs_num_trees.csv')
+shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_v2_rmse_vs_num_trees.csv')
 shrinkage_0point001_bench$X <- NULL
 shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
   dplyr::rename(
@@ -501,7 +501,7 @@ shrinkage_0point001_bench
 ```
 
 ```{r, results=results_option}
-gbm_merge_df <- merge(shrinkage_0point01_bench, shrinkage_0point001_bench)
+gbm_merge_df <- merge(shrinkage_0point01_bench, shrinkage_0point001_bench, all.x = TRUE)
 gbm_merge_df
 ```
 ```{r RMSEvsNumTrees, fig.cap = "plot of RMSE vs number of trees for shrinkage = 0.01 and shrinkage = 0.001", echo=echo_flag}
