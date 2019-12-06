@@ -54,7 +54,7 @@ We created some plots of 'dep_delay' versus the explanatory variables.  Some plo
 First, we created a correlation plot for the numeric variables to see if there any correlations between the variables.
 We see that there is very little correlation between the response variable dep_delay and any of the other variables. 
 Some of the strongest correlations include the correlation between distance and longitude and time zone and a smaller correlation between distance and latitude. This makes sense as most of the planes are inter US flights from west to east or vice versa, there is not as much distance flown in the north south direction. 
-Please see figure \@ref(fig:corrplot) for the correlation plot. (Please click on the figure number to jump to the plot).
+Please see figure \@ref(fig:corrplot) for the correlation plot. The lack of correlations beteween 'dep_delay' and the other variables suggest that a linear model will not work well. We should try a non-linear model or interaction terms. 
 
 
 ## Principal Component Analysis (PCA)
@@ -65,6 +65,8 @@ As expected, it turns out that variables like ‘lon’, ‘distance’ and ‘t
 
 Please see table \@ref(tab:pve) for the proportion of variance explained by each principal component. 
 Please see table \@ref(tab:pcarotation) for the variable coefficients for each principal component ordered by the magnitude of the variable coefficient for the first principal component. 
+
+
 
 
 ## Validation 
