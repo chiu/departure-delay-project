@@ -201,6 +201,19 @@ We believe that this makes sense because GBMs are able to capture non-linear rel
 
 # Code
 
+The R version used was R version 3.6.1 (2019-07-05).
+The following packages were used:
+tidyverse
+nycflights13
+Hmisc
+lubridate
+imputeMissings
+dplyr
+gbm
+
+Time to Run: Takes 2+ hours to knit the code, mostly because GBM takes a long time to train. 
+
+
 ## Preparing the programming environment
 
 ```{r,echo=FALSE}
