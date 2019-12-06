@@ -1,7 +1,3 @@
-## ----setup, include=FALSE-------------------------------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
-
-
 ## ---- include=FALSE-------------------------------------------------------------------------------
 library(tidyverse)
 benchmark_read_df <- read_csv('performance/benchmark_df.csv')

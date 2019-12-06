@@ -105,8 +105,6 @@ In regression and GBM, we found different features to be important.
 Please see table \@ref(tab:firstbenchmarkdf) below for all the models and their root mean squared error (RMSE) on the validation set.
 
 
-
-
 ```{r, include=FALSE}
 library(tidyverse)
 benchmark_read_df <- read_csv('performance/benchmark_df.csv')
