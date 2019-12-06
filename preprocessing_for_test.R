@@ -20,7 +20,7 @@ preprocess_data <- function(filepath) {
   DF$sched_arr_time_hour <- hour(DF$sched_arr_time_posix)
   DF$sched_arr_time_minute <- minute(DF$sched_arr_time_posix)
   
-  #num minute is number of minutes since start of day for scheduled arrival time
+  # num minute is number of minutes since start of day for scheduled arrival time
   DF$sched_arr_time_num_minute <-
     60 * DF$sched_arr_time_hour + DF$sched_arr_time_minute
   DF$sched_dep_time_posix <-
@@ -51,21 +51,22 @@ preprocess_data <- function(filepath) {
       "air_time",
       "arr_delay",
       "year.x",
-      'tailnum'
+      'tailnum',
+      'flight'
     )
-  DF <- DF[, !(names(DF) %in% drops)]
+  DF <- DF[,!(names(DF) %in% drops)]
   
   ## Remove columns with more than 50% NA
-  DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
+  DF <- DF[,-which(colMeans(is.na(DF)) > 0.5)]
   
   DF$sched_air_time <- as.numeric(DF$sched_air_time)
   
   # impute
-  impute_model <- imputeMissings::compute(DF, method = "median/mode")
+  impute_model <-
+    imputeMissings::compute(DF, method = "median/mode")
   DF <- impute(DF, object = impute_model, flag = TRUE)
   DF <-
     DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are identical to each other.
-  
   
   # scale all but dep_delay
   dep_delay_vec <- DF$dep_delay
@@ -74,8 +75,8 @@ preprocess_data <- function(filepath) {
   DF$dep_delay <- dep_delay_vec
   
   # exclude dep_delay >= 30
-  DF <- DF[DF$dep_delay < 30,]
-  DF$flight <- NULL
+  DF <- DF[DF$dep_delay < 30, ]
+  #DF$flight <- NULL
   
   return(DF)
 }
