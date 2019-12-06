@@ -3,6 +3,8 @@ library(nycflights13)
 library(Hmisc)
 library(lubridate)
 library(imputeMissings)
+library(dplyr)
+
 
 preprocess_data <- function(filepath) {
   set.seed(42)
@@ -12,7 +14,6 @@ preprocess_data <- function(filepath) {
     lapply(DF[sapply(DF, is.character)],
            as.factor)
   DF$flight <- as.factor(DF$flight)
-  
   DF$sched_arr_time_posix <-
     as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad = "0"), format =
                  "%H%M")
@@ -22,16 +23,15 @@ preprocess_data <- function(filepath) {
   #num minute is number of minutes since start of day for scheduled arrival time
   DF$sched_arr_time_num_minute <-
     60 * DF$sched_arr_time_hour + DF$sched_arr_time_minute
-  
   DF$sched_dep_time_posix <-
     as.POSIXct(str_pad(as.character(DF$sched_dep_time), 4 , pad = "0"), format =
                  "%H%M")
   DF$sched_dep_time_hour <- hour(DF$sched_dep_time_posix)
   DF$sched_dep_time_minute <- minute(DF$sched_dep_time_posix)
+  
   #num minute is number of minutes since start of day for scheduled depival time
   DF$sched_dep_time_num_minute <-
     60 * DF$sched_dep_time_hour + DF$sched_dep_time_minute
-  
   DF$sched_air_time <-
     DF$sched_arr_time_posix - DF$sched_dep_time_posix
   drops <-
@@ -45,17 +45,14 @@ preprocess_data <- function(filepath) {
       'hour',
       'time',
       'minute',
-      'time_hour'
-    )
-  DF <- DF[, !(names(DF) %in% drops)]
-  
-  drops <-
-    c("dep_time",
+      'time_hour',
+      "dep_time",
       "arr_time",
       "air_time",
       "arr_delay",
       "year.x",
-      'tailnum')
+      'tailnum'
+    )
   DF <- DF[, !(names(DF) %in% drops)]
   
   ## Remove columns with more than 50% NA
@@ -63,24 +60,21 @@ preprocess_data <- function(filepath) {
   
   DF$sched_air_time <- as.numeric(DF$sched_air_time)
   
+  # impute
   impute_model <- imputeMissings::compute(DF, method = "median/mode")
   DF <- impute(DF, object = impute_model, flag = TRUE)
   DF <-
     DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are identical to each other.
   
-  numeric_only_df <- dplyr::select_if(DF, is.numeric)
   
+  # scale all but dep_delay
   dep_delay_vec <- DF$dep_delay
   DF$dep_delay <- NULL
-  head(DF)
-  
-  library(dplyr)
   DF <- DF %>% mutate_if(is.numeric, scale)
-  head(DF)
   DF$dep_delay <- dep_delay_vec
   
+  # exclude dep_delay >= 30
   DF <- DF[DF$dep_delay < 30,]
-  
   DF$flight <- NULL
   
   return(DF)
