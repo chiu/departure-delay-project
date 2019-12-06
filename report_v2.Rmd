@@ -14,35 +14,39 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Introduction
-The goal of this project is to predict the response variable, departure delays for a particular flight given the explanatory variables.  
-* Please note that you can click on figure and table numbers to jump to that figure or table. 
+The goal of this project is to predict the response variable, departure delays, for a particular flight given the explanatory variables.  
+* Please note that you can click on a figure or table number to jump to that figure or table. 
 
 # Data
 The dataset consists of information about all the flights leaving from New York City in 2013.
-The dataset contains 43 variables in total.  The dataset is an amalgamation of several datasets including datasets containing information on weather, the airports, the flights, and the models of airplanes. 
+The dataset contains 43 variables in total.  The dataset is an amalgamation of several datasets, including datasets containing information on weather, the airports, the flights, and the models of airplanes. 
 The training dataset provided to us contains 200,000 observations.
-Please see table \@ref(tab:table1) for what the data looks like. 
+Please see table \@ref(tab:table1) to view a small sample of the data. 
 
 # Methods
 We will now outline the various methods used to clean and perform prediction on the data. 
-We will discuss our techniques for data preprocessing, and cross validation, and the different models that we tried. 
+We will discuss our techniques for data preprocessing and cross validation, and the different models that we tried. 
 
 ## Data Preprocessing
 We performed data preprocessing on the nycflights13 dataset. 
-Our data preprocessing steps include the following:
+Our data preprocessing steps included the following:
 
-* loading the data from a csv
-* setting the random seed for reproducibility of results 
-* casting all the columns with the character data type into the factor data type
-* converting the ‘shed_arr_time’ and ‘sched_dep_time’ columns into the POSIX time format so that we could accurately take the difference of them.
-* Dropping columns that contain data from after the flights' departure which may leak information about the response variable ‘dep_delay’. We drop columns ‘dep_time’, ‘arr_time’, ‘air_time’, and ‘arr_delay’.
-* We drop column  ‘year.x’ because all the values are 2013
-* We also drop ‘talinum’ because it produces too many dummy variable columns for one hot encoding. 
-* Dropping columns which consists of over 50% NAs which include the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
-* Afterwards, we impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
-* Normalizing the data, to work well with methods like lasso regression.
-* Only kept data which had a departure delay of less than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. 
+* Load the data from a csv.
+* Set the random seed for reproducibility of results.
+* Cast all the columns with the character data type into the factor data type.
+* Convert the ‘sched_arr_time’ and ‘sched_dep_time’ columns into the POSIX time format, then take the difference between them to create the 'sched_air_time' (scheduled air time) column. 
+* Drop columns ‘dep_time’, ‘arr_time’, ‘air_time’, and ‘arr_delay’ which contain data from after the flights' departures which might have leaked information about the response variable ‘dep_delay’. 
+* Drop column ‘year.x’ because all values were 2013.
+* Drop column ‘tailnum’ because it produces too many dummy variable columns for one-hot encoding. 
+* Drop columns which consist of over 50% NAs, which includes the speed column
+* Impute the missing values with the median or mode depending on the datatype of the column and created a flag column which indicates whether or not data was imputed for that variable and row.
+* Normalize the data, to work well with methods like lasso regression.
+* Exclude data which has a departure delay of more than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000.
 
+### Discussion of Data Preprocessing
+We exclude data which has a departure delay of more than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. 
+  We drop columns which consist of over 50% NAs, which includes the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
+  We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
 
 ## Exploratory Analysis
 
@@ -137,6 +141,8 @@ On the other hand, ‘dest’ does appear as an important feature in linear regr
 
 
 ## Discussion
+
+### Data Preprocessing
 
 We considered removing outliers in terms of 'dep_delay' in train but not in validation, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. 
 We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high cook's distances.
@@ -405,7 +411,7 @@ knitr::kable(
 
 
 Chunk below takes 2+ hours to run on an average laptop. 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 library(gbm)
 train_gbm_rmse_vs_num_trees <- function(shrinkage, rerun, num_trees_2_exp=16) {
   #rerun <- TRUE
