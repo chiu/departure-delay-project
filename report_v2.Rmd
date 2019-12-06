@@ -44,12 +44,14 @@ Our data preprocessing steps included the following:
 * Exclude data which has a departure delay of more than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000.
 
 
-
 ## Exploratory Analysis
+
+### Plots
+We created some plots of 'dep_delay' versus the explanatory variables.  Some plots such as Figure  \@ref(fig:DepDelayVsDepTime) show that there may be some non-linear relationship between variables like 'dep_delay' and 'sched_dep_time_num_minute'. This suggests that using a model such as GBM that can capture non-linear relationships would be a good idea. 
+
 
 ### Correlations
 First, we created a correlation plot for the numeric variables to see if there any correlations between the variables.
-
 We see that there is very little correlation between the response variable dep_delay and any of the other variables. 
 Some of the strongest correlations include the correlation between distance and longitude and time zone and a smaller correlation between distance and latitude. This makes sense as most of the planes are inter US flights from west to east or vice versa, there is not as much distance flown in the north south direction. 
 Please see figure \@ref(fig:corrplot) for the correlation plot. (Please click on the figure number to jump to the plot).
@@ -71,34 +73,58 @@ Initially, we used the most basic validation technique where we have a training 
 k-folds cross validation was not initially used in order to save on compute time as we were initially only exploring the models. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a more stable estimate of holdout test set error. 
 
 
+<!-- 
+  # Comment section starts
+Could have tried GAMs. 
+The content should be clear, accurate, complete and at the level of students in Stat 452.
+In the Methods you should provide a brief description of any statistical methods you use. Please restrict
+yourself to methods that were covered in class. 
+You can mention methods not covered as areas of future
+work.
+Methods you considered but were not the focus of your report should be briefly mentioned here
+too. 
+In Results you should summarize and interpret the fitted model.
+Though the primary goal is prediction, your insights into the data-generating process are important. 
+
+Refer to the Appendix for
+the code that implements your prediction equation. 
+
+In the Conclusions and Discussion present your
+conclusions, discuss short-comings of your approach, and, optionally, ideas for further work.
+
+
+
+dest	dest	30.23130
+model	model	19.09165
+sched_dep_time_num_minute	sched_dep_time_num_minute	19.01377
+month	month	6.87392
+carrier	carrier	4.92863
+dewp	dewp	3.54021
+
+# Comment section ends
+-->
+
 ## Models
-We first explored some basic models to establish a baseline performance and compared it to our most sophisticated model, the Generalized Boosted Regression Model (GBM).
+We first explored some basic models to establish baseline performance against which we compare our most sophisticated model, the Generalized Boosted Regression Model (GBM).
 
 ### Basic Models
-‘dep_delay’ is the number of minutes that the plane either departs early or late.  Negative numbers are for early departures and positive numbers are for the number of minutes the plane is late.
-First, we used a basic model of simply predicting the ‘dep_delay’ to always be 0. This was done to establish baseline performance.  
-This model had a root mean squared error (RMSE) of 8.30571.
-The model in which we predicted the median for all the predictions had an RMSE of 8.46926.
+‘dep_delay’ is the number of minutes that the plane departs late.  Negative numbers indicate early departures.
+First, to establish baseline performance, we used a basic model of simply predicting the ‘dep_delay’ to always be 0. This model had a root mean squared error (RMSE) of 8.30571.
+The model in which we always predict the mean had an RMSE of 8.29977.
 
 ### Linear Regression
-A linear regression model assumes a linear relationship between the explanatory variables and the response variable.  The model minimizes the squared loss function.  This minimization process generates coefficients which are used for a linear combination of the explanatory variables.  The linear combination is the prediction. 
-Then we tried linear regression with ‘dep_delay’ as the response variables and all the other remaining variables as the explanatory variables.
-This model was better than predicting the mean with an RMSE of 7.98999. 
-This suggests that there is some relationship between the ‘dep_delay’ and the explanatory variables. 
+A linear regression model assumes a linear relationship between the explanatory variables and the response variable.  Linear regression minimizes a squared loss function to obtain the coefficients of this linear relationship. Our linear regression model was better than predicting the mean, with an RMSE of 7.98999. 
+This suggests that there is some linear relationship between the ‘dep_delay’ and the explanatory variables. 
+
 
 ### Generalized Boosted Regression Model (GBM)
 
 #### Explanation of Model
-How boosted regression models work is we first start off with a baseline prediction. For example, we can use the mean as our baseline prediction.  Then we use a base classifier to iteratively predict on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the ensemble of base classifiers trained so far.  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
+  GBMS work as follows: we iteratively build an ensemble of simple models starting with a baseline model, such as predicting the mean. Then at each iteration, we train a new base classifier (i.e. regressor tree) on the residuals multiplied by the shrinkage hyperparameter.  Then this base classifier is added to the ensemble.
+  A lower shrinkage effectively means a lower learning rate and therefore you need more iterations to reduce the train set residuals by the same amount.  The benefit of a smaller shrinkage (with sufficient trees) is that you end up with a larger ensemble of trees that can reach a lower cross validation loss. This iterative prediction process is called boosting.  In our case, our base classifiers are regressor trees.  Each tree decides on its splitting criterion greedily by picking the split which results in the lowest mean squared error or some other splitting heuristic. We continue for n number of trees where n is specified by the user. Each iteration produces one tree, so the number of iterations is equal to the number of trees. 
 
 #### Tuning
-Afterwards, we tried a Generalized Boosted Regression Model (GBM).  This model with our best tuned hyperparameters had the lowest RMSE of 7.91635 on the validation set after it was tuned to have a shrinkage of 0.01 and 8,192 trees.  Shrinkage is proportional to the learning rate. 8,192 is the number of trees used in the model.  Each iteration uses 1 tree, so 8,192 trees also refers to the number of iterations. According to the vignette provided by the ‘GBM’ package, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
-
-#### Influence
-Please see table \@ref(tab:GBMsummary) for a table of the relative influence of each explanatory variable.   Here, you can see the relative influence for each variable for GBM.  
-For a GBM, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
-The relative influence for a given variable is the average of these improvements over all the trees where the aforementioned variable is used.
-
+The GBM with our best tuned hyperparameters had the lowest RMSE of 7.89071 on the validation set after it was tuned to have a shrinkage of 0.01 and 8,192 trees.  Shrinkage is similar to a learning rate. 8,192 is the number of trees used in the model. According to the vignette provided by the ‘GBM’ package, the RMSE can always be improved by decreasing shrinkage, but this provides diminishing returns.  A good strategy would be to pick a small shrinkage that balances performance and compute time.  Then with this fixed shrinkage value, increase the number of trees until you get diminishing returns.  We decided to follow the aforementioned strategy.  See figure \@ref(fig:RMSEvsNumTrees) for a summary of our tuning experiments. 
 
 
 # Results
@@ -119,14 +145,36 @@ knitr::kable(
 )
 ```
 
+<!--
+#
+dest	dest	30.23130
+model	model	19.09165
+sched_dep_time_num_minute	sched_dep_time_num_minute	19.01377
+month	month	6.87392
+carrier	carrier	4.92863
+dewp	dewp	3.54021
 
+# Comment section ends
+-->
 
 ## GBM
-For the best GBM model, ‘dest’, which refers to which airport a given plane was flying to, was one of the most important features. However, the one hot encoding versions of the variable ‘carrier’ were some of the most important features for regression. Based on the relative influence scores provided by the best GBM, some of the most important feature variables include ‘dest’, ‘model’, and ‘sched_dep_time_num_minute’. The ‘dest’ column contains the airport code for where a given flight is flying to. Based on my run of GBM with a shrinkage of 0.01 and 16834 trees, ‘dest’ was the most important feature with 49.56 relative influence. [@uc_influence].  ‘dest’ is the destination airport code. 'sched_dep_time_num_minute' is the number of minutes since the beginning of a given day for that flight.  'model' is the plane model.  When we tested our model on the final holdout test set, we achieved an RMSE of 7.88805. 
+
+### Influence
+For a GBM, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
+The relative influence for a given variable is the average of these improvements over all the trees in which the aforementioned variable is used.
+Table \@ref(tab:GBMsummary) shows the relative influence of each variable in the GBM.  
+
+
+### Dest
+For the best GBM model, ‘dest’, which refers to which airport a given plane was flying to, was one of the most important features.  Based on the relative influence scores provided by the best GBM, some of the most important feature variables include ‘dest’, ‘model’, and ‘sched_dep_time_num_minute’. The ‘dest’ column contains the airport code for where a given flight is flying to. Based on my run of GBM with a shrinkage of 0.01 and 8192 trees, ‘dest’ was the most important feature with 30.23130 relative influence. [@uc_influence]. 
+
+
+### Final Holdout Test Set Performance
+When we tested our final GBM model on the final holdout test set, we achieved an RMSE of 7.88805.  The improvement in performance over testing on the validation set could be because our final GBM model was trained on both the training set and the validation set, and then tested on the holdout test set. 
 
 
 ## Linear Regression
-On the other hand, ‘dest’ does appear as an important feature in linear regression as well but it is not the most important feature.   If we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from ‘dest’, then, it might appear as the most important feature for linear regression as well. We use ANOVA to measure the statistical significance of ‘dest’. Performing ANOVA to compare linear regression models with and without ‘dest’ yielded a low p-value of 0.0001863 associated with having ‘dest’ meaning that keeping at least one of the one-hot-encoded variables derived from ‘dest’ is beneficial for the linear regression model with high statistical significance. 
+The one hot encoding versions of the variable ‘carrier’ were some of the most important features for regression. On the other hand, ‘dest’ does appear as an important feature in linear regression as well but it is not the most important feature.   If we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from ‘dest’, then, it might appear as the most important feature for linear regression as well. We use ANOVA to measure the statistical significance of ‘dest’. Performing ANOVA to compare linear regression models with and without ‘dest’ yielded a low p-value of 0.0001863 associated with having ‘dest’ meaning that keeping at least one of the one-hot-encoded variables derived from ‘dest’ is beneficial for the linear regression model with high statistical significance. 
 
 
 ## Comparison
@@ -147,7 +195,6 @@ We compromised by excluding data which has a departure delay of more than 30 min
   We drop columns which consist of over 50% NAs, which includes the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
   
   We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
-
 
 
 
@@ -407,7 +454,7 @@ model <- readRDS(destfile)
 gbmsummary <- summary(model)
 knitr::kable(
   head(gbmsummary), booktabs = TRUE,
-  caption = 'gbm relative influence'
+  caption = "GBM relative influence; ‘dest’ is the destination airport code. 'sched_dep_time_num_minute' is the number of minutes since the beginning of a given day for that flight.  'model' is the plane model."
 )
 ```
 
@@ -664,6 +711,11 @@ summary(final_model)
 print(final_rmse)
 ```
 
+```{r DepDelayVsDepTime, fig.cap = "Departure Delay vs. Scheduled Departure Time in # Minutes Since Start of Day with Spline Plotted on Top Depicting Possible Non-Linear Relationship", echo=echo_flag}
+library(ggplot2)
+ggplot(DF, aes(sched_dep_time_num_minute, dep_delay)) + geom_point(alpha = 1/100, colour = "green") + geom_smooth(colour = "red") +  ylim(-20, 10) + ggtitle("Departure Delay vs. Scheduled Departure Time in # Minutes Since Start of Day") +
+  xlab("Scheduled Departure Time in Minutes Since Start of Day (sched_dep_time_num_minute)") + ylab("Departure Delay (dep_delay)")
+```
 
 
 ```{r}
