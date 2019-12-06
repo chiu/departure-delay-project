@@ -129,7 +129,7 @@ The GBM with our best tuned hyperparameters had the lowest RMSE of 7.89071 on th
 
 # Results
 In regression and GBM, we found different features to be important.  
-Please see table \@ref(tab:firstbenchmarkdf) below for all the models and their root mean squared error (RMSE) on the validation set.
+Please see table \@ref(tab:firstbenchmarkdf) below for all the models and their root mean squared errors (RMSE) on the validation set.
 
 
 ```{r, include=FALSE}
@@ -161,34 +161,29 @@ dewp	dewp	3.54021
 
 ### Influence
 For a GBM, the improvement in the splitting criterion (which is mean squared error for regression) for a given variable is calculated at each step.
-The relative influence for a given variable is the average of these improvements over all the trees in which the aforementioned variable is used.
+The relative influence for a given variable is the average of these improvements over all the trees. [@uc_influence]
 Table \@ref(tab:GBMsummary) shows the relative influence of each variable in the GBM.  
 
-
 ### Dest
-For the best GBM model, ‘dest’, which refers to which airport a given plane was flying to, was one of the most important features.  Based on the relative influence scores provided by the best GBM, some of the most important feature variables include ‘dest’, ‘model’, and ‘sched_dep_time_num_minute’. The ‘dest’ column contains the airport code for where a given flight is flying to. Based on my run of GBM with a shrinkage of 0.01 and 8192 trees, ‘dest’ was the most important feature with 30.23130 relative influence. [@uc_influence]. 
-
+Based on my best GBM model with a shrinkage of 0.01 and 8192 trees, ‘dest’ was the most important feature, with 30.23130 relative influence. ‘dest’ refers to which airport a given plane was flying to.  Other high relative influence explanatory variables include ‘model’ and ‘sched_dep_time_num_minute’.
 
 ### Final Holdout Test Set Performance
-When we tested our final GBM model on the final holdout test set, we achieved an RMSE of 7.88805.  The improvement in performance over testing on the validation set could be because our final GBM model was trained on both the training set and the validation set, and then tested on the holdout test set. 
+When we tested our final GBM model on the final holdout test set, we achieved an RMSE of 7.88805.  The improvement in performance over testing on the validation set could be because our final GBM model was trained on a larger dataset (both the training set and the validation set), and then tested on the holdout test set. 
 
 
 ## Linear Regression
-The one hot encoding versions of the variable ‘carrier’ were some of the most important features for regression. On the other hand, ‘dest’ does appear as an important feature in linear regression as well but it is not the most important feature.   If we can somehow sum up all the contributions from each of the one-hot-encoded variables derived from ‘dest’, then, it might appear as the most important feature for linear regression as well. We use ANOVA to measure the statistical significance of ‘dest’. Performing ANOVA to compare linear regression models with and without ‘dest’ yielded a low p-value of 0.0001863 associated with having ‘dest’ meaning that keeping at least one of the one-hot-encoded variables derived from ‘dest’ is beneficial for the linear regression model with high statistical significance. 
-
+The one-hot encoded versions of the variable ‘carrier’ were some of the most important features for regression. On the other hand, ‘dest’ does appear as an important feature in linear regression as well but it is not the most important feature.   If we could somehow sum up all the contributions from each of the one-hot-encoded variables derived from ‘dest’, then it might appear as the most important feature for linear regression as well. We use ANOVA to measure the statistical significance of ‘dest’. Performing ANOVA to compare linear regression models with and without ‘dest’ yielded a low p-value of 0.0001863, meaning that keeping at least one of the one-hot-encoded variables derived from ‘dest’ is beneficial with high statistical significance for the linear regression model.
 
 ## Comparison
-‘dest’ was most one of the most important features in GBM. It is possible that ‘dest’ is important in combination with other variables which is something that the linear regression model without interaction terms cannot capture the relationship of, whereas GBM can discover these non-linear relationships. 
+'dest' appeared to be a more important feature in GBM than in linear regression, which may be because the GBM can capture interaction effects between 'dest' and other variables, whereas our simple linear regression model cannot. 
 
 
 
-# Conclusion and Discussion 
 
+# Discussion
 
-## Discussion
-
-### Data Preprocessing
-  We considered removing outliers in terms of 'dep_delay' in train but not in validation, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high cook's distances.
+## Data Preprocessing
+  We considered removing outliers in terms of 'dep_delay' in train but not in validation, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the validation set. We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high Cook's distances.
 However, this was infeasible as we did not have enough computational resources available and it took too long. 
 We compromised by excluding data which has a departure delay of more than 30 minutes late as a proxy for excluding outliers, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. If we keep outliers, we would be learning relationships between the response variable and the explanatory variables for a particular outlier observation which do not generalize well to other observations. However, when we are removing 30,000 points, we are probably removing many points that would help the model generalize to new data if kept.  The threshold of 30 minutes was probably too low, and we may have benefited from picking a higher threshold. We could have tuned the threshold by using validation sets that do not have points removed according to the threshold. 
 
@@ -197,11 +192,11 @@ We compromised by excluding data which has a departure delay of more than 30 min
   We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
 
 
+# Conclusion
+None of the models that we tried performed particularly well. We believe that this is intrinscially a difficult problem.  If departure delays were easy to predict, the flight schedules would be designed to prevent them and therefore there would be no departure delays. This difficulty may be compounded by poor explanatory variables having weak relationships with the 'dep_delay'.  Specifically, information about the condition of a particular flight before it reaches New York City is missing. Instead, we get information about where the flight is going next, which would reveal less information about the current condition of the plane and what kind of maintenance it would need, and therefore what ‘dep_delay’ it would have. 
+ Out of all the models, that we tried, gradient boosted regression models yielded the best performance based on having the lowest root mean squared error on the validation set.
+We believe that this makes sense because GBMs are able to capture non-linear relationships between the explanatory variables and 'dep_delay' whereas our simple linear regression model could not. 
 
-## Conclusion
-None of the models that we tried performed particularly well.  We surmise that this may be due to the explanatory variables having a weak relationship with the 'dep_delay' variable.  There is a lack of information about the condition of a particular flight before it reaches New York City. Instead, we get information about where the flight is going next, which would reveal less information about the current condition of the plane and what kind of maintenance it would need, and therefore what ‘dep_delay’ it would have. 
- Out of all the models, that we tried, gradient boosted regression models yielded the best performance based on having the lowest root mean squared error on the hold out test set.
-We believe that this makes sense because GBMs are able to capture non-linear relationships between the explanatory variables and 'dep_delay' whereas linear regression cannot. 
 
 
 # Code
@@ -237,7 +232,7 @@ knitr::kable(
 ```
 
 
-turning all columns with datatype characters to factors. 
+### turning all columns with datatype characters to factors. 
 ```{r, results=results_option}
 DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
                                        as.factor)
@@ -245,6 +240,7 @@ DF$flight <- as.factor(DF$flight)
 ```
 
 
+### parsing times from strings and calculating scheduled air time
 ```{r, results=results_option}
 library(lubridate)
 DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
@@ -283,6 +279,10 @@ DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
 
 ```{r, results=results_option}
 DF$sched_air_time <- as.numeric(DF$sched_air_time)
+```
+
+### Imputing Variables 
+```{r, results=results_option}
 library(imputeMissings)
 impute_model <- imputeMissings::compute(DF, method="median/mode")
 DF <- impute(DF, object=impute_model, flag=TRUE)
@@ -454,7 +454,7 @@ model <- readRDS(destfile)
 gbmsummary <- summary(model)
 knitr::kable(
   head(gbmsummary), booktabs = TRUE,
-  caption = "GBM relative influence; ‘dest’ is the destination airport code. 'sched_dep_time_num_minute' is the number of minutes since the beginning of a given day for that flight.  'model' is the plane model."
+  caption = "GBM relative influence; dest is the destination airport code. sched_dep_time_num_minute is the number of minutes since the beginning of a given day for that flight.  model is the plane model."
 )
 ```
 
@@ -691,7 +691,6 @@ preprocess_data <- function(filepath) {
 }
 
 final_test_df <- preprocess_data('fltest.csv.gz')
-print(final_test_df)
 
 ```
 
