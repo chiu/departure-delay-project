@@ -43,10 +43,7 @@ Our data preprocessing steps included the following:
 * Normalize the data, to work well with methods like lasso regression.
 * Exclude data which has a departure delay of more than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000.
 
-### Discussion of Data Preprocessing
-We exclude data which has a departure delay of more than 30 minutes late, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. 
-  We drop columns which consist of over 50% NAs, which includes the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
-  We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
+
 
 ## Exploratory Analysis
 
@@ -143,10 +140,15 @@ On the other hand, ‘dest’ does appear as an important feature in linear regr
 ## Discussion
 
 ### Data Preprocessing
-
-We considered removing outliers in terms of 'dep_delay' in train but not in validation, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. 
-We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high cook's distances.
+  We considered removing outliers in terms of 'dep_delay' in train but not in validation, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the cross-validation set. We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high cook's distances.
 However, this was infeasible as we did not have enough computational resources available and it took too long. 
+We compromised by excluding data which has a departure delay of more than 30 minutes late as a proxy for excluding outliers, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. If we keep outliers, we would be learning relationships between the response variable and the explanatory variables for a particular outlier observation which do not generalize well to other observations. However, when we are removing 30,000 points, we are probably removing many points that would help the model generalize to new data if kept.  The threshold of 30 minutes was probably too low, and we may have benefited from picking a higher threshold. We could have tuned the threshold by using validation sets that do not have points removed according to the threshold. 
+
+  We drop columns which consist of over 50% NAs, which includes the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
+  
+  We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
+
+
 
 
 ## Conclusion
