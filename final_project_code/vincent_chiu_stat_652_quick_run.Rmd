@@ -6,8 +6,11 @@ output:
   bookdown::pdf_document2:
     toc: true
     fig_caption: yes
-bibliography: bibliography.bib
 ---
+
+
+# to knit or run, please put fltrain.csv.gz and fltest.csv.gz in the same folder as this file.
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
