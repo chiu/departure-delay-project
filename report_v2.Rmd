@@ -70,41 +70,10 @@ Please see table \@ref(tab:pcarotation) for the variable coefficients for each p
 
 
 ## Validation 
-Initially, we used the most basic validation technique where we have a training dataset and a validation dataset. We reserved 2/3 of the original dataset’s observations for the training dataset and 1/3 of the observations for the validation dataset.  There is additional data which was provided at a later date which we use as the holdout test set.  2/3 of the data gives enough data for the models to train on while 1/3 is enough data to get an accurate assessment of the error.  After the data preprocessing steps, which included removing all rows where ‘dep_delay’ was greater than 30 minutes, we were left with 170,645 observations.
+We used the most basic validation technique where we have a training dataset and a validation dataset. We reserved 2/3 of the original dataset’s observations for the training dataset and 1/3 of the observations for the validation dataset.  There is additional data which was provided at a later date which we use as the holdout test set.  2/3 of the data gives enough data for the models to train on while 1/3 is enough data to get an accurate assessment of the error.  After the data preprocessing steps, which included removing all rows where ‘dep_delay’ was greater than 30 minutes, we were left with 170,645 observations.
 	Of these 170,645 observations, 113,763 were used as the training dataset and 56,882 were used as the validation set.  The training dataset and the validation dataset do not have any common observations. 
 k-folds cross validation was not used in order to save on compute time as GBM was already time intensive to train. k-folds cross validation would increase training time for the models by a factor of k.  However, k-folds cross validation would lead to a lower variance estimate of holdout test set error.
 
-
-<!-- 
-  # Comment section starts
-Could have tried GAMs. 
-The content should be clear, accurate, complete and at the level of students in Stat 452.
-In the Methods you should provide a brief description of any statistical methods you use. Please restrict
-yourself to methods that were covered in class. 
-You can mention methods not covered as areas of future
-work.
-Methods you considered but were not the focus of your report should be briefly mentioned here
-too. 
-In Results you should summarize and interpret the fitted model.
-Though the primary goal is prediction, your insights into the data-generating process are important. 
-
-Refer to the Appendix for
-the code that implements your prediction equation. 
-
-In the Conclusions and Discussion present your
-conclusions, discuss short-comings of your approach, and, optionally, ideas for further work.
-
-
-
-dest	dest	30.23130
-model	model	19.09165
-sched_dep_time_num_minute	sched_dep_time_num_minute	19.01377
-month	month	6.87392
-carrier	carrier	4.92863
-dewp	dewp	3.54021
-
-# Comment section ends
--->
 
 ## Models
 We first explored some basic models to establish baseline performance against which we compare our most sophisticated model, the Generalized Boosted Regression Model (GBM).
@@ -133,14 +102,14 @@ The GBM with our best tuned hyperparameters had the lowest RMSE of 7.89071 on th
 # Discussion and Results
 
 ## Data Preprocessing
-  We considered removing outliers in terms of 'dep_delay' in train but not in validation, then use k-folds cross validation on test to determine how many outliers we should remove to boost performance on the validation set. We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high Cook's distances.
+  We considered removing outliers in terms of 'dep_delay' in the train set but not in the validation set, then use k-folds cross validation on the validation set to determine how many outliers we should remove to boost performance on the validation set. We considered removing highly influential points in order to train a better model. In this case, we consider highly influential points to be points with high Cook's distances.
 However, this was infeasible as we did not have enough computational resources available and it took too long. 
 We compromised by excluding data which has a departure delay of more than 30 minutes late as a proxy for excluding outliers, which reduced the dataset from 200,000 rows to approximately 170,000. This is because we consider extreme delays of over 30 minutes late to be freak accidents which cannot be accurately predicted by the available explanatory variables. If we keep outliers, we would be learning relationships between the response variable and the explanatory variables for a particular outlier observation which do not generalize well to other observations. However, when we are removing 30,000 points, we are probably removing many points that would help the model generalize to new data if kept.  The threshold of 30 minutes was probably too low, and we may have benefited from picking a higher threshold. We could have tuned the threshold by using validation sets that do not have points removed according to the threshold. 
 
   We drop columns which consist of over 50% NAs, which includes the speed column.  However, it should be noted that a rule of thumb suggested by Professor McNeney is to drop any columns with over 5% NAs.   We use a different threshold for dropping columns leading to us keeping columns such as model instead of dropping it.
   
-  We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the model with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 0 if the associated value was present and 1 if the associated value was NA. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
-In regression and GBM, we found different features to be important.  
+  We impute the missing values. However, there are limitations to this approach of imputing the missing values.  It is possible, that the missingness of the plane model variable is related to ‘dep_delay’.  In this scenario, we may be creating an inferior feature set by keeping the variable ‘model’ and imputing it.  For example, say a highly unreliable plane model that frequently causes long delays has a high probability of being labeled as NA and represents the majority of NAs in the dataset. We would not be able to capture the relationship between this plane ‘model’ and ‘dep_delay’ if we imputed the data with the mode.  To counteract this affect, we imputed NAs for the remaining columns using the ‘imputeMissings’ library, adding a boolean flag which indicates 1 if the associated value was NA and 0 if the associated value was present. For example, the ‘model_flag’ for a given row is 1 if the ‘model’ value was NA for that given row.  Hence, no information is lost from our imputation. 
+In regression and GBM, we found different explanatory variables to be important for prediction.   
 
 
 ## Models
@@ -160,17 +129,7 @@ knitr::kable(
 )
 ```
 
-<!--
-#
-dest	dest	30.23130
-model	model	19.09165
-sched_dep_time_num_minute	sched_dep_time_num_minute	19.01377
-month	month	6.87392
-carrier	carrier	4.92863
-dewp	dewp	3.54021
 
-# Comment section ends
--->
 
 ## GBM
 
@@ -179,8 +138,9 @@ For a GBM, the improvement in the splitting criterion (which is mean squared err
 The relative influence for a given variable is the average of these improvements over all the trees. [@uc_influence]
 Table \@ref(tab:GBMsummary) shows the relative influence of each variable in the GBM.  
 
-### Dest
+### Explanatory Variables
 Based on my best GBM model with a shrinkage of 0.01 and 8192 trees, ‘dest’ was the most important feature, with 30.23130 relative influence. ‘dest’ refers to which airport a given plane was flying to.  Other high relative influence explanatory variables include ‘model’ and ‘sched_dep_time_num_minute’.
+\@ref(tab:DestMeanDelay) shows that each 'dest' has a different mean 'dep_delay'. 
 
 ### Final Holdout Test Set Performance
 When we tested our final GBM model on the final holdout test set, we achieved an RMSE of 7.88805.  The improvement in performance over testing on the validation set could be because our final GBM model was trained on a larger dataset (both the training set and the validation set), and then tested on the holdout test set. 
@@ -469,12 +429,12 @@ model <- readRDS(destfile)
 ```{r}
 gbmsummary <- summary(model)
 ```
-, dest is the destination airport code. sched_dep_time_num_minute is the number of minutes since the beginning of a given day for that flight. model is the plane model.
+
 
 ```{r GBMsummary, echo=echo_flag}
 knitr::kable(
   head(gbmsummary), booktabs = TRUE,
-  caption = 'GBM relative influence'
+  caption = "GBM relative influence , dest is the destination airport code. sched\\_dep\\_time\\_num\\_minute is the number of minutes since the beginning of a given day for that flight. model is the plane model."
 )
 ```
 
@@ -735,6 +695,23 @@ print(final_rmse)
 library(ggplot2)
 ggplot(DF, aes(sched_dep_time_num_minute, dep_delay)) + geom_point(alpha = 1/100, colour = "green") + geom_smooth(colour = "red") +  ylim(-20, 10) + ggtitle("Departure Delay vs. Scheduled Departure Time in # Minutes Since Start of Day") +
   xlab("Scheduled Departure Time in Minutes Since Start of Day (sched_dep_time_num_minute)") + ylab("Departure Delay (dep_delay)")
+```
+
+
+Table of destination sorted by mean delay 
+```{r}
+dest_ordered_by_mean_delay <- DF %>% group_by(dest) %>%dplyr::summarize(Mean = mean(dep_delay, na.rm=TRUE)) %>% arrange(desc(abs(Mean))) 
+```
+
+```{r DestMeanDelay, echo=FALSE}
+knitr::kable(
+  head(dest_ordered_by_mean_delay), booktabs = TRUE,
+  caption = 'Table of destination airport codes, dest, vs. the mean delay for that destination'
+)
+```
+
+```{r}
+var(dest_ordered_by_mean_delay$Mean)
 ```
 
 
