@@ -13,6 +13,18 @@ bibliography: bibliography.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r,echo=FALSE}
+# set eval_flag_time_intensive to TRUE to run time intensive code
+eval_flag_time_intensive <- FALSE
+echo_flag <- FALSE
+results_option <- 'hide'
+message_flag <- FALSE
+warning_flag <- FALSE
+eval_flag <- TRUE
+
+```
+
+
 # Introduction
 The goal of this project is to predict the response variable, departure delays, for a particular flight given the explanatory variables.  
 * Please note that you can click on a figure or table number to jump to that figure or table. 
@@ -167,14 +179,7 @@ Time to Run: Takes 2+ hours to knit the code, mostly because GBM takes a long ti
 
 ## Preparing the programming environment
 
-```{r,echo=FALSE}
-echo_flag <- FALSE
-results_option <- 'hide'
-message_flag <- FALSE
-warning_flag <- FALSE
-eval_flag <- TRUE
-eval_flag_time_intensive <- FALSE
-```
+
 
 ### Loading Libraries
 ```{r, results=results_option, message=message_flag, warning=warning_flag, eval=eval_flag}
@@ -394,8 +399,20 @@ benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_descrip
 ```
 
 
-## GBM
+```{r, results=results_option, message=message_flag, warning=warning_flag, eval=eval_flag}
+benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.89071))
+write_csv(benchmark_df, 'benchmark_df.csv')
+```
 
+
+```{r benchmarkdf, echo=echo_flag, eval=eval_flag}
+knitr::kable(
+  head(benchmark_df), booktabs = TRUE,
+  caption = 'RMSE on the validation set, benchmark comparing all the models that we tried'
+)
+```
+
+## GBM
 ```{r, results=results_option, message=message_flag, warning=warning_flag, eval=eval_flag_time_intensive}
 library(gbm)
 
@@ -536,18 +553,7 @@ ggplot(gbm_merge_df, aes(num_trees)) +
 ```
 
 
-```{r, results=results_option, message=message_flag, warning=warning_flag, eval=eval_flag_time_intensive}
-benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.89071))
-write_csv(benchmark_df, 'performance/benchmark_df.csv')
-```
 
-
-```{r benchmarkdf, echo=echo_flag, eval=eval_flag_time_intensive}
-knitr::kable(
-  head(benchmark_df), booktabs = TRUE,
-  caption = 'RMSE on the validation set, benchmark comparing all the models that we tried'
-)
-```
 
 
 Final training on entire dataset to prepare for test set. 
