@@ -140,7 +140,7 @@ Table \@ref(tab:GBMsummary) shows the relative influence of each variable in the
 
 ### Explanatory Variables
 Based on my best GBM model with a shrinkage of 0.01 and 8192 trees, ‘dest’ was the most important feature, with 30.23130 relative influence. ‘dest’ refers to which airport a given plane was flying to.  Other high relative influence explanatory variables include ‘model’ and ‘sched_dep_time_num_minute’.
-\@ref(tab:DestMeanDelay) shows that each 'dest' has a different mean 'dep_delay'. 
+Table \@ref(tab:DestMeanDelay) shows that each 'dest' has a different mean 'dep_delay'. 
 
 ### Final Holdout Test Set Performance
 When we tested our final GBM model on the final holdout test set, we achieved an RMSE of 7.88805.  The improvement in performance over testing on the validation set could be because our final GBM model was trained on a larger dataset (both the training set and the validation set), and then tested on the holdout test set. 
@@ -578,7 +578,7 @@ if (!file.exists(destfile)) {
 final_model <- readRDS(destfile)
 final_preds = predict(final_model, newdata=train_and_validation_df, n.trees=num_trees)
 final_rmse = sqrt(mean((train_and_validation_df$dep_delay - final_preds)^2))
-summary(final_model)
+#summary(final_model)
 ```
 
 ```{r}

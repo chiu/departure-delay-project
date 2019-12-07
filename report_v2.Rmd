@@ -140,7 +140,7 @@ Table \@ref(tab:GBMsummary) shows the relative influence of each variable in the
 
 ### Explanatory Variables
 Based on my best GBM model with a shrinkage of 0.01 and 8192 trees, ‘dest’ was the most important feature, with 30.23130 relative influence. ‘dest’ refers to which airport a given plane was flying to.  Other high relative influence explanatory variables include ‘model’ and ‘sched_dep_time_num_minute’.
-\@ref(tab:DestMeanDelay) shows that each 'dest' has a different mean 'dep_delay'. 
+Table \@ref(tab:DestMeanDelay) shows that each 'dest' has a different mean 'dep_delay'. 
 
 ### Final Holdout Test Set Performance
 When we tested our final GBM model on the final holdout test set, we achieved an RMSE of 7.88805.  The improvement in performance over testing on the validation set could be because our final GBM model was trained on a larger dataset (both the training set and the validation set), and then tested on the holdout test set. 
@@ -182,17 +182,19 @@ Time to Run: Takes 2+ hours to knit the code, mostly because GBM takes a long ti
 ```{r,echo=FALSE}
 echo_flag <- FALSE
 results_option <- 'hide'
+message_flag <- FALSE
+warning_flag <- FALSE
 ```
 
 ### Loading Libraries
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(tidyverse)
 ```
 
 ## Data Preprocessing
 
 ### Loading the data
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(nycflights13)
 library(Hmisc)
 set.seed(42)
@@ -209,7 +211,7 @@ knitr::kable(
 
 
 ### turning all columns with datatype characters to factors. 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], 
                                        as.factor)
 DF$flight <- as.factor(DF$flight)
@@ -217,7 +219,7 @@ DF$flight <- as.factor(DF$flight)
 
 
 ### parsing times from strings and calculating scheduled air time
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(lubridate)
 DF$sched_arr_time_posix <- as.POSIXct(str_pad(as.character(DF$sched_arr_time), 4, pad="0"),format="%H%M")
 DF$sched_arr_time_hour <- hour(DF$sched_arr_time_posix)
@@ -232,40 +234,40 @@ DF$sched_dep_time_minute <- minute(DF$sched_dep_time_posix)
 #num minute is number of minutes since start of day for scheduled depival time
 DF$sched_dep_time_num_minute <- 60*DF$sched_dep_time_hour + DF$sched_dep_time_minute
 ```
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 select(original_data, time_hour, sched_dep_time, sched_arr_time, tz, tzone)
 select(DF, sched_arr_time, sched_arr_time_hour)
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 DF$sched_air_time <- DF$sched_arr_time_posix - DF$sched_dep_time_posix
 drops <- c('sched_arr_time_posix', 'sched_arr_time_hour', 'sched_dep_time_posix', 'sched_dep_time_hour', 'sched_dep_time', 'sched_arr_time', 'hour', 'time', 'minute', 'time_hour' )
 DF <- DF[ , !(names(DF) %in% drops)]
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 drops <- c("dep_time", "arr_time", "air_time", "arr_delay", "year.x", 'tailnum')
 DF <- DF[ , !(names(DF) %in% drops)]
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 ## Remove columns with more than 50% NA
 DF <- DF[, -which(colMeans(is.na(DF)) > 0.5)]
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 DF$sched_air_time <- as.numeric(DF$sched_air_time)
 ```
 
 ### Imputing Variables 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(imputeMissings)
 impute_model <- imputeMissings::compute(DF, method="median/mode")
 DF <- impute(DF, object=impute_model, flag=TRUE)
 DF <- DF[!duplicated(as.list(DF))]  #remove all redundant flag columns that are identical to each other. 
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 numeric_only_df <- dplyr::select_if(DF, is.numeric)
 library(corrplot)
 ```
@@ -276,7 +278,7 @@ corrplot(cor(numeric_only_df), type = 'lower')
 
 
 ## Feature Scaling
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 dep_delay_vec <- DF$dep_delay
 DF$dep_delay <- NULL
 head(DF)
@@ -289,11 +291,11 @@ DF$dep_delay <- dep_delay_vec
 
 ## Exploratory Data Analysis
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 numeric_DF <- dplyr::select_if(DF, is.numeric) %>%  scale()
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 prcomp_res <- prcomp(numeric_DF)
 sdev <- prcomp_res$sdev
 sdev
@@ -301,7 +303,7 @@ sdev
 
 ### all four components at same time
 proportion of variance explained by each component
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 pve <- colSums(prcomp_res$x^2)/sum(numeric_DF^2)
 ```
 
@@ -313,11 +315,11 @@ knitr::kable(
 ```
 
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 rotation <- as.data.frame(prcomp_res$rotation)
 rotation[order(-abs(rotation$PC1)),]
 ```
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 pca_rotation <- head(rotation[order(-abs(rotation$PC1)),])
 ```
 
@@ -329,11 +331,11 @@ knitr::kable(
 ```
 
 ### take out extreme departure delays
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 DF<-DF[DF$dep_delay < 30,]
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 set.seed(42)
 DF$flight <- NULL
 train_index <- sample(1:nrow(DF),size=2*nrow(DF)/3,replace=FALSE)
@@ -342,13 +344,13 @@ test_df <- DF[-train_index,]
 ```
 
 save entire dataset for later
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 train_and_validation_df <- DF
 ```
 
 
 ## predicting 0
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 benchmark_df <- data.frame(model_description = character(), rmse = numeric(), stringsAsFactors = FALSE)
 rmse = mean((test_df$dep_delay-0)^2) %>% sqrt()
 model_description = "predicting 0"
@@ -356,7 +358,7 @@ benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_descrip
 ```
 
 ## predicting the mean
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 rmse = mean((test_df$dep_delay-mean(train_df$dep_delay))^2)%>% sqrt()
 rmse
 model_description <- 'predicting the mean'
@@ -366,7 +368,7 @@ benchmark_df
 
 
 ## predicting the median
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 rmse = mean((test_df$dep_delay-median(train_df$dep_delay))^2)%>% sqrt()
 rmse
 model_description <- 'predicting the median'
@@ -375,7 +377,7 @@ benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_descrip
 
 
 ## linear regression with dest
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 model <- lm(dep_delay ~ ., data=train_df)
 model_without_dest <-  lm(dep_delay ~ .-dest, data=train_df)
 anova(model, model_without_dest)
@@ -385,7 +387,7 @@ head(sorteddf)
 ```
 
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 lm_test_df <- test_df
 
 in_test_but_not_train <- setdiff(unique(lm_test_df$model), unique(train_df$model))
@@ -404,7 +406,7 @@ benchmark_df <- rbind(benchmark_df, data.frame(model_description = model_descrip
 
 ## GBM
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(gbm)
 
 train_gbm <- function(filename){
@@ -426,7 +428,7 @@ if (!file.exists(destfile)) {
 model <- readRDS(destfile)
 ```
 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 gbmsummary <- summary(model)
 ```
 
@@ -512,7 +514,7 @@ train_gbm_rmse_vs_num_trees(shrinkage = 0.001, rerun = FALSE, num_trees_2_exp=18
 ```
 
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 shrinkage_0point01_bench <- read.csv('performance2/gbm_shrinkage_0point01_v2_rmse_vs_num_trees.csv')
 shrinkage_0point01_bench$X <- NULL
 shrinkage_0point01_bench <- shrinkage_0point01_bench %>% 
@@ -522,7 +524,7 @@ shrinkage_0point01_bench <- shrinkage_0point01_bench %>%
 shrinkage_0point01_bench
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 shrinkage_0point001_bench <- read.csv('performance2/gbm_shrinkage_0point001_v2_rmse_vs_num_trees.csv')
 shrinkage_0point001_bench$X <- NULL
 shrinkage_0point001_bench <- shrinkage_0point001_bench %>% 
@@ -532,7 +534,7 @@ shrinkage_0point001_bench <- shrinkage_0point001_bench %>%
 shrinkage_0point001_bench
 ```
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 gbm_merge_df <- merge(shrinkage_0point01_bench, shrinkage_0point001_bench, all.x = TRUE)
 gbm_merge_df
 ```
@@ -544,7 +546,7 @@ ggplot(gbm_merge_df, aes(num_trees)) +
 ```
 
 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 benchmark_df <- rbind(benchmark_df, data.frame(model_description = 'GBM (tuned)', rmse=7.89071))
 write_csv(benchmark_df, 'performance/benchmark_df.csv')
 ```
@@ -559,7 +561,7 @@ knitr::kable(
 
 
 Final training on entire dataset to prepare for test set. 
-```{r, results=results_option}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(gbm)
 num_trees <- 2^13
 train_final_gbm <- function(filename, num_trees){
@@ -578,17 +580,17 @@ if (!file.exists(destfile)) {
 final_model <- readRDS(destfile)
 final_preds = predict(final_model, newdata=train_and_validation_df, n.trees=num_trees)
 final_rmse = sqrt(mean((train_and_validation_df$dep_delay - final_preds)^2))
-summary(final_model)
+#summary(final_model)
 ```
 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 rmse
 ```
 
 
 ## Evaluate Error on Holdout Test Data
 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 library(tidyverse)
 library(nycflights13)
 library(Hmisc)
@@ -675,7 +677,7 @@ final_test_df <- preprocess_data('fltest.csv.gz')
 
 ```
 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 num_trees <- 2^13
 set.seed(42)
 
@@ -687,11 +689,11 @@ if (!file.exists(destfile)) {
 final_model <- readRDS(destfile)
 final_preds = predict(final_model, newdata=final_test_df, n.trees=num_trees)
 final_rmse = sqrt(mean((final_test_df$dep_delay - final_preds)^2))
-summary(final_model)
+#summary(final_model)
 print(final_rmse)
 ```
 
-```{r DepDelayVsDepTime, fig.cap = "Departure Delay vs. Scheduled Departure Time in # Minutes Since Start of Day with Spline Plotted on Top Depicting Possible Non-Linear Relationship", echo=echo_flag}
+```{r DepDelayVsDepTime, fig.cap = "Departure Delay vs. Scheduled Departure Time in # Minutes Since Start of Day with Spline Plotted on Top Depicting Possible Non-Linear Relationship", echo=echo_flag, message=FALSE, warning=FALSE}
 library(ggplot2)
 ggplot(DF, aes(sched_dep_time_num_minute, dep_delay)) + geom_point(alpha = 1/100, colour = "green") + geom_smooth(colour = "red") +  ylim(-20, 10) + ggtitle("Departure Delay vs. Scheduled Departure Time in # Minutes Since Start of Day") +
   xlab("Scheduled Departure Time in Minutes Since Start of Day (sched_dep_time_num_minute)") + ylab("Departure Delay (dep_delay)")
@@ -699,7 +701,7 @@ ggplot(DF, aes(sched_dep_time_num_minute, dep_delay)) + geom_point(alpha = 1/100
 
 
 Table of destination sorted by mean delay 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 dest_ordered_by_mean_delay <- DF %>% group_by(dest) %>%dplyr::summarize(Mean = mean(dep_delay, na.rm=TRUE)) %>% arrange(desc(abs(Mean))) 
 ```
 
@@ -710,12 +712,12 @@ knitr::kable(
 )
 ```
 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 var(dest_ordered_by_mean_delay$Mean)
 ```
 
 
-```{r}
+```{r, results=results_option, message=message_flag, warning=warning_flag}
 print("done")
 ```
 
